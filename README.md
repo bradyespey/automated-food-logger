@@ -230,8 +230,8 @@ nssm install FoodLogApp
 Configure the service with the following settings:
 
 - **Path**: `C:\Users\espey\AppData\Local\Programs\Python\Python312\python.exe`
-- **Arguments**: `C:\Projects\LoseIt\app.py`
-- **Startup Directory**: `C:\Projects\LoseIt\`
+- **Arguments**: `C:\Projects\GitHub\LoseIt\app.py`
+- **Startup Directory**: `C:\Projects\GitHub\LoseIt`
 - **Log Output**: `C:\Projects\LoseIt\logs\flask_stdout.log`
 - **Log Error**: `C:\Projects\LoseIt\logs\flask_stderr.log`
 
