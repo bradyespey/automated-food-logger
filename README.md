@@ -35,6 +35,7 @@ This project integrates key technologies such as **Google OAuth 2.0** for secure
 This is the main interface where users enter food data or paste nutritional info retrieved from GPT.
 
 ![Food Logging](images/food_logging.png)
+![Food Example](images/food_example.png)
 
 ### Logged Food on Lose It!
 After submitting food data, it automatically appears on your Lose It! account.
