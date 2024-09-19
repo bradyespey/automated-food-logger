@@ -71,7 +71,7 @@ def submit_log():
     app.logger.debug(f"Received log text: {log_text}")
 
     if log_text:
-        script_path = "C:\\Projects\\LoseIt\\scripts\\import_foods.py"
+        script_path = "C:\\Projects\\GitHub\\LoseIt\\scripts\\import_foods.py"
         env = os.environ.copy()
         env['LOG_TEXT'] = log_text
 
