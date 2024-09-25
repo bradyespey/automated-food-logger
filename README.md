@@ -44,7 +44,7 @@ After submitting food data, it automatically appears on your Lose It! account.
 
 After submitting a drink or soup, the water intake is automatically updated in your Lose It! account.
 
-<img src="images/water_intake.png" alt="Water Intake" width="700">
+<img src="images/water_intake.png" alt="Water Intake" width="300">
 
 ---
 
