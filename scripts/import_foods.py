@@ -39,6 +39,10 @@ def initialize_driver():
     # Toggle headless mode based on the variable
     if headless_mode:
         options.add_argument("--headless")  # Run in headless mode
+    else:
+        # Maximize window when not in headless mode
+        options.add_argument("--start-maximized")
+
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
@@ -286,12 +290,106 @@ def compare_values(field_name, input_value, logged_value):
     else:
         return f'<span style="color: red;">**{field_name}:** {logged_value} (does not match input value {input_value})</span><br>'
 
+def navigate_to_water_goals_page(driver):
+    """Navigates to the water intake goals page."""
+    goals_url = "https://www.loseit.com/#Goals:Water%20Intake%5EWater%20Intake"
+    driver.get(goals_url)
+    time.sleep(3)
+
+def navigate_water_day(driver, days):
+    """Navigate forward or backward by 'days' in the Water Intake interface."""
+    try:
+        direction = "next" if days > 0 else "previous"
+        day_button_xpath = "//div[@role='button' and @title='{}']".format("Next" if direction == "next" else "Previous")
+        for _ in range(abs(days)):
+            for attempt in range(3):
+                try:
+                    day_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, day_button_xpath)))
+                    driver.execute_script("arguments[0].scrollIntoView(true);", day_button)
+                    day_button.click()
+                    time.sleep(1)
+                    break
+                except Exception as e:
+                    if attempt == 2:
+                        print(f"Navigation failed for {direction} on the water intake page: {e}")
+                        return
+    except Exception as e:
+        print(f"Failed to navigate {direction} on water intake page: {e}")
+
+def get_current_water_intake(driver):
+    """Reads the current water intake value from the water intake page."""
+    try:
+        # Locate the input field that contains the current water intake value
+        water_input = WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.XPATH, "//input[@type='text' and contains(@class, 'gwt-TextBox')]"))
+        )
+        current_water = float(water_input.get_attribute('value') or 0.0)
+        return current_water
+    except Exception as e:
+        print(f"Failed to read current water intake: {e}")
+        return 0.0
+
+def set_water_intake(driver, water_oz):
+    try:
+        # Locate the input field for water intake
+        water_input = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@type='text' and contains(@class, 'gwt-TextBox')]"))
+        )
+        water_input.clear()
+        water_input.send_keys(str(water_oz))
+        time.sleep(1)
+        water_input.send_keys(Keys.ENTER)  # Press Enter to submit
+        time.sleep(2)
+    except Exception as e:
+        print(f"Failed to set water intake: {e}")
+
+def update_water_intake(driver, food_details, days_difference):
+    """Updates the water intake if the food has fluid ounces and returns a log message."""
+    if "fluid ounces" in food_details.get("serving_quantity", "").lower():
+        try:
+            fluid_oz_match = re.search(r"(\d+\.?\d*)", food_details["serving_quantity"])
+            if not fluid_oz_match:
+                print(f"No fluid ounces found in serving size: {food_details['serving_quantity']}")
+                return ""
+            fluid_oz = float(fluid_oz_match.group(1))
+            
+            # Navigate to the water intake page and the correct day
+            navigate_to_water_goals_page(driver)
+            if days_difference != 0:
+                navigate_water_day(driver, days_difference)
+            
+            # Get the current water intake value
+            current_water = get_current_water_intake(driver)
+            print(f"Current water intake: {current_water} oz")
+            print(f"Fluid ounces to add: {fluid_oz} oz")
+            updated_water = current_water + fluid_oz
+            print(f"Updated water intake: {updated_water} oz")
+            
+            # Set the new water intake value
+            set_water_intake(driver, updated_water)
+            
+            return f"Updated the water intake from {current_water} oz to {updated_water} oz"
+        except Exception as e:
+            print(f"Failed to update water intake: {e}")
+            return ""
+    return ""
+
+def visit_homepage(driver):
+    try:
+        homepage_url = "https://www.loseit.com/"
+        driver.get(homepage_url)
+        time.sleep(3)
+    except Exception as e:
+        print(f"Failed to visit the homepage: {e}")
+
 def main():
     start_time = time.time()
     
     log_text = os.getenv('LOG_TEXT', '')
 
     driver = None
+    logging_output = "<b style='color: #f9c74f;'>Logging Output:</b><br>"
+
     try:
         driver = initialize_driver_with_retry()
 
@@ -320,16 +418,28 @@ def main():
                 print(f"Failed to find 'Create a custom food' button for {food_details['name']}. Skipping to next.")
                 continue
 
+            # Log food details
             enter_food_details(driver, food_details)
             logged_items.append(food_details)
+            logging_output += f"Logging item {index + 1} of {len(food_items)}: {food_details['name']}<br>"
+
+            # Update water intake and add the log message if applicable
+            water_log_message = update_water_intake(driver, food_details, days_difference)
+            if water_log_message:
+                logging_output += f"{water_log_message}<br>"
+
+            # Refresh the page to reset for the next item
             driver.refresh()
+            visit_homepage(driver)
             time.sleep(3)
+
     finally:
         if driver:
             driver.quit()
 
+    logging_output += f"Time to Log: {time.time() - start_time:.2f} seconds<br><br>"
     comparison = compare_items(food_items, logged_items, log_text, start_time)
-    print(comparison)
+    print(logging_output + comparison)
 
 if __name__ == "__main__":
     main()

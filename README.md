@@ -2,27 +2,25 @@
 
 ## Overview
 
-**FoodLoggingAutomation** is a Python-based project designed to streamline the process of logging food intake data into the [Lose It!](https://loseit.com) website using Selenium automation. This project also integrates a custom GPT, [Estimate Nutritional Info GPT](https://chatgpt.com/g/g-VJEAwPuc8-estimate-nutritional-info), allowing users to query nutritional information for a meal or food item. The user can copy the results from the GPT into the web app, which then automates logging the food into Lose It! using Selenium.
-
-Additionally, the project includes a hydration impact calculator, based on the WaterMinder app, for tracking daily water intake and its impact.
+**FoodLoggingAutomation** is a Python-based project designed to streamline the process of logging food intake data into the [Lose It!](https://loseit.com) website using Selenium automation. This project also integrates a custom GPT, [Estimate Nutritional Info GPT](https://chatgpt.com/g/g-VJEAwPuc8-estimate-nutritional-info), allowing users to query nutritional information for a meal or food item. The user can copy the results from the GPT into the web app, which then automates logging the food into Lose It! using Selenium. The script also automatically updates the day's water intake if the food item is identified as a drink or soup.
 
 This project integrates key technologies such as **Google OAuth 2.0** for secure user authentication and **Nginx** to handle HTTPS requests. By using Selenium, the script interacts with Lose It! to log food details, including nutrition data, meal information, and serving sizes.
 
 ### Why Use FoodLoggingAutomation?
-- **Automated Food Logging with GPT**: Ask [Estimate Nutritional Info GPT](https://chatgpt.com/g/g-VJEAwPuc8-estimate-nutritional-info) about a meal's nutritional info and copy the results into the web app to log them in Lose It! automatically.
+
+- **Automated Food and Water Logging with GPT**: Ask [Estimate Nutritional Info GPT](https://chatgpt.com/g/g-VJEAwPuc8-estimate-nutritional-info) about a meal's nutritional info and copy the results into the web app to log them in Lose It! automatically, including automatic water intake logging for drinks and soups.
 - **Secure Authentication**: Uses Google OAuth 2.0 to keep user data secure.
 - **Accurate Data Validation**: Ensures that the logged data matches user input.
 - **Seamless Integration**: The local Flask app serves as a user interface, while the backend handles the heavy lifting with Selenium and Nginx.
-- **Hydration Impact Tracking**: Integrated calculator to track hydration, similar to the WaterMinder app.
 
 ---
 
 ## Key Features
 
+- **Automatic Water Intake Logging**: The script now automatically logs water intake when you log drinks or soups, ensuring your hydration is tracked alongside your meals.
 - **Custom GPT Integration**: Allows users to query the GPT for nutritional info, which can be copied directly into the app to log meals in Lose It!.
 - **Flask Web Application**: A clean and simple interface for entering food data and interacting with GPT results.
 - **OAuth 2.0 Authentication**: Secure login using your Google account.
-- **Hydration Calculator**: Track daily water intake and calculate hydration impact based on WaterMinder.
 - **Data Validation**: Ensures the food data logged into Lose It! matches the input.
 - **Nginx Reverse Proxy**: Enables secure HTTPS connections for the web interface.
 - **Error Handling and Logging**: Extensive logging and debugging capabilities for easy troubleshooting.
@@ -42,16 +40,23 @@ After submitting food data, it automatically appears on your Lose It! account.
 <img src="images/lose_it.png" alt="Lose It!" width="400">
 <img src="images/food_example.png" alt="Food Example" width="300">
 
+### Water Intake Logging
+
+After submitting a drink or soup, the water intake is automatically updated in your Lose It! account.
+
+<img src="images/water_intake.png" alt="Water Intake" width="700">
+
 ---
 
 ## How It Works
 
-1. **Query Nutritional Info via GPT**: Users can ask the [Estimate Nutritional Info GPT](https://chatgpt.com/g/g-VJEAwPuc8-estimate-nutritional-info) for details about a meal or food item. The GPT provides nutrition data like calories, macronutrients, and serving sizes.
+1. **Query Nutritional Info via GPT**: Users can ask the [Estimate Nutritional Info GPT](https://chatgpt.com/g/g-VJEAwPuc8-estimate-nutritional-info) for details about a meal or food item. The GPT provides nutrition data like calories, macronutrients, serving sizes, and identifies if the item is a drink or soup.
 2. **Copy Results to Web App**: Copy the results from GPT into the web app’s food logging interface.
-3. **Automated Logging**: Selenium opens Lose It!, logs into your account (using stored cookies), and logs the food data automatically.
+3. **Automated Logging**:
+   - **Food Logging**: Selenium opens Lose It!, logs into your account (using stored cookies), and logs the food data automatically.
+   - **Water Intake Logging**: If the food item is identified as a drink or soup and includes fluid ounces in the serving size, the script automatically logs the water intake for the corresponding day in Lose It!.
 4. **Validation**: The system checks that the data logged into Lose It! matches what you input.
-5. **Results**: A confirmation message is displayed once the food is logged, and you can see it live on Lose It!.
-6. **Hydration Tracking**: Use the hydration calculator to track daily water intake and see its impact.
+5. **Results**: A confirmation message is displayed once the food and water intake are logged, and you can see them live on Lose It!.
 
 ---
 
@@ -199,19 +204,19 @@ Ensure this file is not included in the repository by adding it to `.gitignore`.
 
 ### 7. Automate Logging with Selenium
 
-The food logging process is automated using Selenium WebDriver. The script `import_foods.py` is responsible for logging food data into the Lose It! website.
+The food and water intake logging process is automated using Selenium WebDriver. The script `import_foods.py` is responsible for logging food data into the Lose It! website.
 
 - The script:
   - Loads the Lose It! website using stored cookies for authentication.
   - Navigates to the correct date for food logging.
   - Enters food data such as name, quantity, calories, and other nutritional information.
-  - Validates that the food is logged correctly.
+  - Automatically logs water intake if the food item is a drink or soup with fluid ounces specified in the serving size.
+  - Validates that the food and water data are logged correctly.
 
 To run the script manually, execute:
 
 ```bash
 python C:\Projects\LoseIt\scripts\import_foods.py
-```
 
 ---
 
@@ -256,7 +261,8 @@ To test that everything is working correctly:
 
 - Access the Flask app on your local network: [http://192.168.0.100/foodlog](http://192.168.0.100/foodlog)
 - Access the app externally via your domain: [https://your-domain.com/foodlog](https://your-domain.com/foodlog)
-- Use the OAuth 2.0 login, submit food data, and verify that it is logged into the "Lose It!" website.
+- Use the OAuth 2.0 login, submit food data including drinks or soups with fluid ounces specified.
+- Verify that both the food and water intake are logged into the "Lose It!" website for the correct dates.
 
 ---
 
