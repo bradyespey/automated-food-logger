@@ -227,6 +227,14 @@ def parse_nutritional_data(content):
         elif line.startswith("Serving Size:"):
             serving_size = re.sub(r"\s*\(.*?\)", "", line.replace("Serving Size:", "").strip())
             current_item["serving_quantity"] = serving_size
+
+            # Extract fluid ounces if present
+            fluid_oz_match = re.search(r"(\d+\.?\d*)\s*fluid ounces", serving_size.lower())
+            if fluid_oz_match:
+                current_item["fluid_ounces"] = float(fluid_oz_match.group(1))
+            else:
+                current_item["fluid_ounces"] = 0.0
+
         elif line.startswith("Calories:"):
             current_item["calories"] = line.replace("Calories:", "").strip()
         elif line.startswith("Fat (g):"):
@@ -251,44 +259,75 @@ def parse_nutritional_data(content):
 
     return parsed_items
 
-def compare_items(input_items, logged_items, content, start_time):
-    logging_output = "<b style='color: #f9c74f;'>Logging Output:</b><br>"
-    for i, logged_item in enumerate(logged_items, 1):
-        logging_output += f"Logging item {i} of {len(input_items)}: {logged_item['name']}<br>"
-    logging_output += f"Time to Log: {time.time() - start_time:.2f} seconds<br><br>"
-
+def compare_items(input_items, logged_items, content, total_input_fluid_ounces, total_logged_fluid_ounces):
     total_food_names = content.count('Food Name:')
     if total_food_names == len(input_items):
-        parsing_check = f"<b style='color: #f9c74f;'>Parsing Check:</b><br><span style='color: green;'>All {total_food_names} foods in input parsed correctly</span><br><br>"
+        parsing_check = (
+            "<b style='color: #f9c74f;'>Parsing Check:</b><br>"
+            f"<span style='color: green;'>All {total_food_names} foods in input parsed correctly</span><br><br>"
+        )
     else:
-        parsing_check = f"<b style='color: #f9c74f;'>Parsing Check:</b><br><span style='color: red;'>Error: {total_food_names - len(input_items)} food items found in input but not parsed correctly.</span><br><br>"
+        parsing_check = (
+            "<b style='color: #f9c74f;'>Parsing Check:</b><br>"
+            f"<span style='color: red;'>Error: {total_food_names - len(input_items)} food items found in input but not parsed correctly.</span><br><br>"
+        )
 
     comparison_check = "<b style='color: #f9c74f;'>Comparison Check:</b><br>"
     for index, (input_item, logged_item) in enumerate(zip(input_items, logged_items), 1):
         comparison_check += compare_values("name", input_item['name'], logged_item['name'])
-        comparison_check += compare_values("date", input_item['date'], logged_item['date'])
-        comparison_check += compare_values("meal", input_item['meal'], logged_item['meal'])
-        comparison_check += compare_values("brand", input_item['brand'], logged_item['brand'])
-        comparison_check += compare_values("icon", input_item['icon'], logged_item['icon'])
-        comparison_check += compare_values("serving_quantity", input_item['serving_quantity'], logged_item['serving_quantity'])
-        comparison_check += compare_values("calories", input_item['calories'], logged_item['calories'])
-        comparison_check += compare_values("fat", input_item['fat'], logged_item['fat'])
-        comparison_check += compare_values("saturated_fat", input_item['saturated_fat'], logged_item['saturated_fat'])
-        comparison_check += compare_values("cholesterol", input_item['cholesterol'], logged_item['cholesterol'])
-        comparison_check += compare_values("sodium", input_item['sodium'], logged_item['sodium'])
-        comparison_check += compare_values("carbs", input_item['carbs'], logged_item['carbs'])
-        comparison_check += compare_values("fiber", input_item['fiber'], logged_item['fiber'])
-        comparison_check += compare_values("sugar", input_item['sugar'], logged_item['sugar'])
-        comparison_check += compare_values("protein", input_item['protein'], logged_item['protein'])
+        comparison_check += compare_values("date", input_item.get('date', ''), logged_item.get('date', ''))
+        comparison_check += compare_values("meal", input_item.get('meal', ''), logged_item.get('meal', ''))
+        comparison_check += compare_values("brand", input_item.get('brand', ''), logged_item.get('brand', ''))
+        comparison_check += compare_values("icon", input_item.get('icon', ''), logged_item.get('icon', ''))
+        comparison_check += compare_values("serving_quantity", input_item.get('serving_quantity', ''), logged_item.get('serving_quantity', ''))
+        comparison_check += compare_values("calories", input_item.get('calories', ''), logged_item.get('calories', ''))
+        comparison_check += compare_values("fat", input_item.get('fat', ''), logged_item.get('fat', ''))
+        comparison_check += compare_values("saturated_fat", input_item.get('saturated_fat', ''), logged_item.get('saturated_fat', ''))
+        comparison_check += compare_values("cholesterol", input_item.get('cholesterol', ''), logged_item.get('cholesterol', ''))
+        comparison_check += compare_values("sodium", input_item.get('sodium', ''), logged_item.get('sodium', ''))
+        comparison_check += compare_values("carbs", input_item.get('carbs', ''), logged_item.get('carbs', ''))
+        comparison_check += compare_values("fiber", input_item.get('fiber', ''), logged_item.get('fiber', ''))
+        comparison_check += compare_values("sugar", input_item.get('sugar', ''), logged_item.get('sugar', ''))
+        comparison_check += compare_values("protein", input_item.get('protein', ''), logged_item.get('protein', ''))
         comparison_check += "<br>"
 
-    return logging_output + parsing_check + comparison_check
+    # Compare fluid ounces if present
+        if input_item.get('fluid_ounces', 0.0) > 0.0:
+            comparison_check += compare_numeric_values("fluid_ounces_logged", input_item['fluid_ounces'], logged_item.get('fluid_ounces_added', 0.0))
+        comparison_check += "<br>"
+
+    # Compare total fluid ounces
+    comparison_check += "<b style='color: #f9c74f;'>Total Fluid Ounces Comparison:</b><br>"
+    comparison_check += compare_numeric_values("Total Fluid Ounces", total_input_fluid_ounces, total_logged_fluid_ounces)
+
+    return parsing_check + comparison_check
+
+def compare_numeric_values(field_name, input_value, logged_value):
+    try:
+        input_value_num = float(input_value)
+        logged_value_num = float(logged_value)
+        if abs(input_value_num - logged_value_num) < 1e-6:
+            return f'<span style="color: green;">**{field_name}:** {logged_value_num} (matches input value {input_value_num})</span><br>'
+        else:
+            return f'<span style="color: red;">**{field_name}:** {logged_value_num} (does not match input value {input_value_num})</span><br>'
+    except ValueError:
+        return f'<span style="color: red;">**{field_name}:** Invalid numerical values for comparison</span><br>'
 
 def compare_values(field_name, input_value, logged_value):
-    if str(input_value) == str(logged_value):
-        return f'<span style="color: green;">**{field_name}:** {logged_value} (matches input value)</span><br>'
-    else:
-        return f'<span style="color: red;">**{field_name}:** {logged_value} (does not match input value {input_value})</span><br>'
+    # Try to compare as floats first
+    try:
+        input_value_num = float(input_value)
+        logged_value_num = float(logged_value)
+        if abs(input_value_num - logged_value_num) < 1e-6:
+            return f'<span style="color: green;">**{field_name}:** {logged_value} (matches input value)</span><br>'
+        else:
+            return f'<span style="color: red;">**{field_name}:** {logged_value} (does not match input value {input_value})</span><br>'
+    except ValueError:
+        # Fallback to string comparison
+        if str(input_value).strip() == str(logged_value).strip():
+            return f'<span style="color: green;">**{field_name}:** {logged_value} (matches input value)</span><br>'
+        else:
+            return f'<span style="color: red;">**{field_name}:** {logged_value} (does not match input value {input_value})</span><br>'
 
 def navigate_to_water_goals_page(driver):
     """Navigates to the water intake goals page."""
@@ -344,35 +383,30 @@ def set_water_intake(driver, water_oz):
         print(f"Failed to set water intake: {e}")
 
 def update_water_intake(driver, food_details, days_difference):
-    """Updates the water intake if the food has fluid ounces and returns a log message."""
     if "fluid ounces" in food_details.get("serving_quantity", "").lower():
         try:
             fluid_oz_match = re.search(r"(\d+\.?\d*)", food_details["serving_quantity"])
             if not fluid_oz_match:
-                print(f"No fluid ounces found in serving size: {food_details['serving_quantity']}")
-                return ""
+                return "", 0.0
             fluid_oz = float(fluid_oz_match.group(1))
-            
+
             # Navigate to the water intake page and the correct day
             navigate_to_water_goals_page(driver)
             if days_difference != 0:
                 navigate_water_day(driver, days_difference)
-            
+
             # Get the current water intake value
             current_water = get_current_water_intake(driver)
-            print(f"Current water intake: {current_water} oz")
-            print(f"Fluid ounces to add: {fluid_oz} oz")
             updated_water = current_water + fluid_oz
-            print(f"Updated water intake: {updated_water} oz")
-            
+
             # Set the new water intake value
             set_water_intake(driver, updated_water)
-            
-            return f"Updated the water intake from {current_water} oz to {updated_water} oz"
+
+            return f"Updated the water intake from {current_water} oz to {updated_water} oz", fluid_oz
         except Exception as e:
             print(f"Failed to update water intake: {e}")
-            return ""
-    return ""
+            return "", 0.0
+    return "", 0.0
 
 def visit_homepage(driver):
     try:
@@ -389,6 +423,9 @@ def main():
 
     driver = None
     logging_output = "<b style='color: #f9c74f;'>Logging Output:</b><br>"
+
+    total_input_fluid_ounces = 0.0
+    total_logged_fluid_ounces = 0.0
 
     try:
         driver = initialize_driver_with_retry()
@@ -423,10 +460,19 @@ def main():
             logged_items.append(food_details)
             logging_output += f"Logging item {index + 1} of {len(food_items)}: {food_details['name']}<br>"
 
-            # Update water intake and add the log message if applicable
-            water_log_message = update_water_intake(driver, food_details, days_difference)
+            # Update water intake and get fluid ounces added
+            water_log_message, fluid_oz_added = update_water_intake(driver, food_details, days_difference)
             if water_log_message:
                 logging_output += f"{water_log_message}<br>"
+            else:
+                fluid_oz_added = 0.0
+
+            # Store the fluid ounces added into food_details
+            food_details['fluid_ounces_added'] = fluid_oz_added
+
+            # Accumulate totals
+            total_input_fluid_ounces += food_details.get('fluid_ounces', 0.0)
+            total_logged_fluid_ounces += fluid_oz_added
 
             # Refresh the page to reset for the next item
             driver.refresh()
@@ -438,7 +484,7 @@ def main():
             driver.quit()
 
     logging_output += f"Time to Log: {time.time() - start_time:.2f} seconds<br><br>"
-    comparison = compare_items(food_items, logged_items, log_text, start_time)
+    comparison = compare_items(food_items, logged_items, log_text, total_input_fluid_ounces, total_logged_fluid_ounces)
     print(logging_output + comparison)
 
 if __name__ == "__main__":
