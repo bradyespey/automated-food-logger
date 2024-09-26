@@ -17,9 +17,9 @@ This project integrates key technologies such as **Google OAuth 2.0** for secure
 
 ## Key Features
 
-- **Automatic Water Intake Logging**: The script now automatically logs water intake when you log drinks or soups, ensuring your hydration is tracked alongside your meals.
 - **Custom GPT Integration**: Allows users to query the GPT for nutritional info, which can be copied directly into the app to log meals in Lose It!.
 - **Flask Web Application**: A clean and simple interface for entering food data and interacting with GPT results.
+- **Automatic Water Intake Logging**: The script automatically logs water intake when you log drinks or soups, ensuring your hydration is tracked alongside your meals.
 - **OAuth 2.0 Authentication**: Secure login using your Google account.
 - **Data Validation**: Ensures the food data logged into Lose It! matches the input.
 - **Nginx Reverse Proxy**: Enables secure HTTPS connections for the web interface.
