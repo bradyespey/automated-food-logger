@@ -2,28 +2,18 @@
 
 ## Overview
 
-**FoodLoggingAutomation** is a Python-based project designed to streamline the process of logging food intake data into the [Lose It!](https://loseit.com) website using Selenium automation. This project also integrates a custom GPT, [Estimate Nutritional Info GPT](https://chatgpt.com/g/g-VJEAwPuc8-estimate-nutritional-info), allowing users to query nutritional information for a meal or food item. The user can copy the results from the GPT into the web app, which then automates logging the food into Lose It! using Selenium. The script also automatically updates the day's water intake if the food item is identified as a drink or soup.
+**FoodLoggingAutomation** is a project designed to streamline the process of logging food intake into the [Lose It!](https://loseit.com) website using Selenium automation. It integrates with a custom GPT, [Estimate Nutritional Info GPT](https://chatgpt.com/g/g-VJEAwPuc8-estimate-nutritional-info), enabling users to easily query nutritional information and automatically log it into Lose It!. Additionally, it automatically updates water intake when drinks or soups are logged.
 
-This project integrates key technologies such as **Google OAuth 2.0** for secure user authentication and **Nginx** to handle HTTPS requests. By using Selenium, the script interacts with Lose It! to log food details, including nutrition data, meal information, and serving sizes.
-
-### Why Use FoodLoggingAutomation?
-
-- **Automated Food and Water Logging with GPT**: Ask [Estimate Nutritional Info GPT](https://chatgpt.com/g/g-VJEAwPuc8-estimate-nutritional-info) about a meal's nutritional info and copy the results into the web app to log them in Lose It! automatically, including automatic water intake logging for drinks and soups.
-- **Secure Authentication**: Uses Google OAuth 2.0 to keep user data secure.
-- **Accurate Data Validation**: Ensures that the logged data matches user input.
-- **Seamless Integration**: The local Flask app serves as a user interface, while the backend handles the heavy lifting with Selenium and Nginx.
-
----
+This project uses key technologies like **Google OAuth 2.0** for secure authentication and **Nginx** to handle HTTPS requests. By leveraging Selenium, it automates food logging, including nutritional data, meal information, serving sizes, and water intake.
 
 ## Key Features
 
-- **Automatic Water Intake Logging**: The script now automatically logs water intake when you log drinks or soups, ensuring your hydration is tracked alongside your meals.
-- **Custom GPT Integration**: Allows users to query the GPT for nutritional info, which can be copied directly into the app to log meals in Lose It!.
-- **Flask Web Application**: A clean and simple interface for entering food data and interacting with GPT results.
-- **OAuth 2.0 Authentication**: Secure login using your Google account.
-- **Data Validation**: Ensures the food data logged into Lose It! matches the input.
-- **Nginx Reverse Proxy**: Enables secure HTTPS connections for the web interface.
-- **Error Handling and Logging**: Extensive logging and debugging capabilities for easy troubleshooting.
+- **Automated Food and Water Logging**: Seamlessly log meals by querying nutritional info through the GPT and pasting results into the web app. The script automatically logs water intake when applicable (e.g., for drinks or soups).
+- **Flask Web Application**: Provides a simple, user-friendly interface for entering food data and working with GPT results.
+- **Secure Google OAuth 2.0 Authentication**: Keeps your login credentials secure while accessing the app.
+- **Accurate Data Logging**: Ensures that the nutritional data logged into Lose It! matches the input provided.
+- **Nginx Reverse Proxy with HTTPS**: Securely serves the web app over HTTPS using Nginx, with SSL/TLS support.
+- **Comprehensive Error Handling and Logging**: Includes detailed logs and error reporting for troubleshooting.
 
 ---
 
