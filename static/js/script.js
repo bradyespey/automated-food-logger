@@ -66,8 +66,5 @@ function calculateHydration() {
 
 // Function to open the Foodvisor link
 function openFoodvisor() {
-    const uploadSection = document.getElementById('upload-section');
-    if (uploadSection) {
-        uploadSection.scrollIntoView({ behavior: 'smooth' });
-    }
+    window.open('https://www.foodvisor.io/en/vision/#demo', '_blank');
 }
