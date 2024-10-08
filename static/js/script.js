@@ -64,7 +64,10 @@ function calculateHydration() {
     document.getElementById('hydration-result').textContent = `Hydration Value: ${hydrationValue.toFixed(2)} fl oz`;
 }
 
-// New function to open the Foodvisor link
+// Function to open the Foodvisor link
 function openFoodvisor() {
-    window.open('https://www.foodvisor.io/en/vision/', '_blank');
+    const uploadSection = document.getElementById('upload-section');
+    if (uploadSection) {
+        uploadSection.scrollIntoView({ behavior: 'smooth' });
+    }
 }
