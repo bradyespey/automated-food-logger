@@ -6,7 +6,7 @@ async function submitFoodLog() {
     const logText = document.getElementById('food-log-text').value;
 
     try {
-        const response = await fetch('/foodlog/submit-log', {  // Updated URL here
+        const response = await fetch('/foodlog/submit-log', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -62,4 +62,9 @@ function calculateHydration() {
 
     const hydrationValue = hydrationType * hydrationAmount;
     document.getElementById('hydration-result').textContent = `Hydration Value: ${hydrationValue.toFixed(2)} fl oz`;
+}
+
+// New function to open the Foodvisor link
+function openFoodvisor() {
+    window.open('https://www.foodvisor.io/en/vision/', '_blank');
 }
