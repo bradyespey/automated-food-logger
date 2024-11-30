@@ -157,7 +157,7 @@ chrome_profile/
 old/
 
 # Ignore sensitive credentials (like API keys or local configurations)
-scripts/loseit_cookies.json
+loseit_cookies.json
 api_credentials.json
 
 # Ignore system-generated files

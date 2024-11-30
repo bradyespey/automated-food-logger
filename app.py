@@ -1,3 +1,5 @@
+# app.py
+
 import os
 import json
 from flask import Flask, redirect, url_for, session, request, jsonify, send_from_directory
@@ -8,22 +10,21 @@ import logging
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__, static_folder='static')
-app.secret_key = os.urandom(24)
+app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 
-# Load API credentials from JSON file (without printing to terminal)
-with open('C:\\Projects\\LoseIt\\api_credentials.json') as f:
-    credentials = json.load(f)
+# Apply ProxyFix to handle Heroku's proxy headers correctly
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # OAuth configuration
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
-    client_id=credentials['client_id'],
-    client_secret=credentials['client_secret'],
+    client_id=os.environ.get('CLIENT_ID'),
+    client_secret=os.environ.get('CLIENT_SECRET'),
     access_token_url='https://oauth2.googleapis.com/token',
     authorize_url='https://accounts.google.com/o/oauth2/auth',
     authorize_params=None,
-    redirect_uri='https://theespeys.com/foodlog/oauth2callback',  # Hard-coded for debugging
+    redirect_uri=os.environ.get('REDIRECT_URI'),  # Set in environment variables
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={
         'scope': 'openid profile email',
@@ -43,8 +44,8 @@ def requires_auth(f):
 
 @app.route('/foodlog/login')
 def login():
-    # Manually set the correct redirect_uri to use https
-    redirect_uri = 'https://theespeys.com/foodlog/oauth2callback'
+    # Use the redirect_uri from environment variables
+    redirect_uri = os.environ.get('REDIRECT_URI')
     return google.authorize_redirect(redirect_uri)
 
 @app.route('/foodlog/oauth2callback')
@@ -71,7 +72,7 @@ def submit_log():
     app.logger.debug(f"Received log text: {log_text}")
 
     if log_text:
-        script_path = "C:\\Projects\\GitHub\\LoseIt\\scripts\\import_foods.py"
+        script_path = os.path.join(os.getcwd(), 'scripts', 'import_foods.py')
         env = os.environ.copy()
         env['LOG_TEXT'] = log_text
 
@@ -106,4 +107,5 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.DEBUG)
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)

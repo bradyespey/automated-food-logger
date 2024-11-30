@@ -1,3 +1,5 @@
+// static/js/script.js
+
 async function submitFoodLog() {
     const logButton = document.querySelector('.nav-buttons button:nth-child(1)');
     logButton.textContent = 'Logging...';

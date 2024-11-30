@@ -1,3 +1,5 @@
+# scripts/import_foods.py
+
 import os
 import subprocess
 import time
@@ -8,48 +10,55 @@ import re
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
+import base64
 
 warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.CRITICAL, format='%(message)s')
 
 # ======= TOGGLE OPTIONS =======
-headless_mode = True  # Set to True for headless mode, False for non-headless (visible Chrome)
+headless_mode = True  # Set to True for headless mode
 # =============================
 
-cookie_path = "C:\\Projects\\LoseIt\\loseit_cookies.json"
 url = "https://www.loseit.com/"
 
 def kill_chrome_driver():
     # Kill any lingering Chrome or ChromeDriver processes
-    subprocess.call("taskkill /f /im chromedriver.exe >nul 2>&1", shell=True)
-    subprocess.call("taskkill /f /im chrome.exe >nul 2>&1", shell=True)
+    if os.name == 'nt':
+        subprocess.call("taskkill /f /im chromedriver.exe >nul 2>&1", shell=True)
+        subprocess.call("taskkill /f /im chrome.exe >nul 2>&1", shell=True)
+    else:
+        subprocess.call("pkill chromedriver", shell=True)
+        subprocess.call("pkill chrome", shell=True)
 
 def initialize_driver():
     kill_chrome_driver()  # Ensure no previous instances are running
 
     # Set Chrome options
     options = webdriver.ChromeOptions()
-    
-    # Toggle headless mode based on the variable
-    if headless_mode:
-        options.add_argument("--headless")  # Run in headless mode
-    else:
-        # Maximize window when not in headless mode
-        options.add_argument("--start-maximized")
 
+    # Run in headless mode
+    if headless_mode:
+        options.add_argument("--headless")
+        options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1920x1080")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--remote-debugging-port=9222")
+    options.add_argument("--disable-logging")
+    options.add_argument("--log-level=3")
 
     # Use webdriver_manager to manage ChromeDriver
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
-    
+
     return driver
 
 def initialize_driver_with_retry(retries=3):
@@ -57,22 +66,34 @@ def initialize_driver_with_retry(retries=3):
     for attempt in range(retries):
         try:
             return initialize_driver()
-        except Exception as e:
+        except WebDriverException as e:
             if attempt < retries - 1:
                 print(f"Retrying to initialize driver (attempt {attempt + 1})...")
                 time.sleep(2)  # Wait before retrying
             else:
                 raise e
 
-def load_cookies_and_navigate(driver, cookie_path):
+def load_cookies_and_navigate(driver):
     driver.get(url)
-    if os.path.exists(cookie_path):
-        with open(cookie_path, "r") as cookie_file:
-            cookies = json.load(cookie_file)
-        for cookie in cookies:
-            driver.add_cookie(cookie)
+    cookies_base64 = os.environ.get('LOSEIT_COOKIES', '')
+    if cookies_base64:
+        try:
+            cookies_json = base64.b64decode(cookies_base64).decode('utf-8')
+            cookies = json.loads(cookies_json)
+            for cookie in cookies:
+                # Adjust cookie domain if necessary
+                if 'domain' in cookie:
+                    del cookie['domain']
+                driver.add_cookie(cookie)
+        except Exception as e:
+            print(f"Failed to decode and load cookies: {e}")
+            return False
+    else:
+        print("LOSEIT_COOKIES environment variable is not set.")
+        return False
     driver.get(url)
     time.sleep(3)
+    return True
 
 def navigate_day(driver, days):
     try:
@@ -153,20 +174,22 @@ def enter_food_details(driver, food_item):
         actions.send_keys(food_item.get("icon", "").split()[0]).perform()
         actions.send_keys(Keys.TAB).perform()
 
-        serving_amount, serving_type = food_item.get("serving_quantity", "0 servings").split(" ", 1)
-        whole_part = 0
-        serving_fraction = 0
-        if ' ' in serving_amount:
-            parts = serving_amount.split(' ')
-            whole_part = int(parts[0])
-            serving_fraction = convert_fraction_to_float(parts[1])
+        serving_quantity = food_item.get("serving_quantity", "0 servings")
+        if " " in serving_quantity:
+            serving_amount, serving_type = serving_quantity.split(" ", 1)
+        else:
+            serving_amount, serving_type = serving_quantity, "servings"
+
+        serving_parts = serving_amount.split(' ')
+        if len(serving_parts) == 2:
+            whole_part = int(serving_parts[0])
+            serving_fraction = convert_fraction_to_float(serving_parts[1])
         elif '/' in serving_amount:
+            whole_part = 0
             serving_fraction = convert_fraction_to_float(serving_amount)
         else:
-            parts = serving_amount.split('.')
-            whole_part = int(parts[0])
-            if len(parts) > 1:
-                serving_fraction = float('0.' + parts[1])
+            whole_part = int(serving_amount)
+            serving_fraction = 0.0
 
         actions.send_keys(str(whole_part)).perform()
         
@@ -291,7 +314,7 @@ def compare_items(input_items, logged_items, content, total_input_fluid_ounces, 
         comparison_check += compare_values("protein", input_item.get('protein', ''), logged_item.get('protein', ''))
         comparison_check += "<br>"
 
-    # Compare fluid ounces if present
+        # Compare fluid ounces if present
         if input_item.get('fluid_ounces', 0.0) > 0.0:
             comparison_check += compare_numeric_values("fluid_ounces_logged", input_item['fluid_ounces'], logged_item.get('fluid_ounces_added', 0.0))
         comparison_check += "<br>"
@@ -350,7 +373,7 @@ def navigate_water_day(driver, days):
                     break
                 except Exception as e:
                     if attempt == 2:
-                        print(f"Navigation failed for {direction} on the water intake page: {e}")
+                        print(f"Navigation failed for {direction} on water intake page: {e}")
                         return
     except Exception as e:
         print(f"Failed to navigate {direction} on water intake page: {e}")
@@ -418,7 +441,7 @@ def visit_homepage(driver):
 
 def main():
     start_time = time.time()
-    
+
     log_text = os.getenv('LOG_TEXT', '')
 
     driver = None
@@ -430,7 +453,9 @@ def main():
     try:
         driver = initialize_driver_with_retry()
 
-        load_cookies_and_navigate(driver, cookie_path)
+        if not load_cookies_and_navigate(driver):
+            print("Failed to load cookies and navigate.")
+            return
 
         food_items = parse_nutritional_data(log_text)
         logged_items = []
@@ -449,7 +474,7 @@ def main():
 
             meal = food_details.get("meal", "dinner").lower()
             meal_tabindex = {"breakfast": "200", "lunch": "300", "dinner": "400", "snacks": "500"}
-            enter_placeholder_text_in_search_box(driver, tabindex=meal_tabindex[meal])
+            enter_placeholder_text_in_search_box(driver, tabindex=meal_tabindex.get(meal, "400"))
 
             if not click_create_custom_food(driver):
                 print(f"Failed to find 'Create a custom food' button for {food_details['name']}. Skipping to next.")
