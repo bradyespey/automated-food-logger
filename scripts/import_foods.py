@@ -16,7 +16,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
-from webdriver_manager.chrome import ChromeDriverManager
 import base64
 
 warnings.filterwarnings("ignore")
@@ -45,7 +44,7 @@ def initialize_driver():
 
     # Run in headless mode
     if headless_mode:
-        options.add_argument("--headless")
+        options.add_argument("--headless=new")  # Updated headless flag as per new Chrome versions
         options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
@@ -55,9 +54,8 @@ def initialize_driver():
     options.add_argument("--disable-logging")
     options.add_argument("--log-level=3")
 
-    # Use webdriver_manager to manage ChromeDriver
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
+    # Initialize Chrome WebDriver using environment's PATH
+    driver = webdriver.Chrome(options=options)
 
     return driver
 
