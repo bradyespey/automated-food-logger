@@ -5,9 +5,9 @@ import json
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
-import subprocess
-import logging
 from werkzeug.middleware.proxy_fix import ProxyFix
+import logging
+from scripts.celery_worker import run_import_foods  # Import the Celery task
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
@@ -86,29 +86,14 @@ def submit_log():
     app.logger.debug(f"Received log text: {log_text}")
 
     if log_text:
-        script_path = os.path.join(os.getcwd(), 'scripts', 'import_foods.py')
-        env = os.environ.copy()
-        env['LOG_TEXT'] = log_text
-
         try:
-            result = subprocess.run(
-                ["python", script_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                env=env
-            )
-
-            output = result.stdout + result.stderr
-            app.logger.debug(f"Script output: {output}")
-
-            return jsonify(output=output), 200
-        except subprocess.CalledProcessError as e:
-            app.logger.error(f"Script execution failed: {e}")
-            return jsonify(output=f"Script execution failed: {e}"), 500
+            # Enqueue the Celery task
+            task = run_import_foods.delay(log_text)
+            app.logger.debug(f"Task {task.id} enqueued.")
+            return jsonify(output="Your food log is being processed."), 202
         except Exception as e:
-            app.logger.error(f"Unexpected error occurred: {e}")
-            return jsonify(output=f"Unexpected error occurred: {e}"), 500
+            app.logger.error(f"Task enqueue failed: {e}")
+            return jsonify(output=f"Task enqueue failed: {e}"), 500
     else:
         app.logger.error("No log text provided.")
         return jsonify(output="No log text provided."), 400
