@@ -42,6 +42,14 @@ def initialize_driver():
     # Set Chrome options
     options = webdriver.ChromeOptions()
 
+    # Use the environment variable for Chrome binary
+    chrome_bin = os.environ.get('GOOGLE_CHROME_BIN')
+    if chrome_bin:
+        options.binary_location = chrome_bin
+    else:
+        print("GOOGLE_CHROME_BIN environment variable is not set.")
+        raise EnvironmentError("GOOGLE_CHROME_BIN not set.")
+
     # Run in headless mode
     if headless_mode:
         options.add_argument("--headless=new")  # Updated headless flag as per new Chrome versions
@@ -54,8 +62,16 @@ def initialize_driver():
     options.add_argument("--disable-logging")
     options.add_argument("--log-level=3")
 
-    # Initialize Chrome WebDriver using environment's PATH
-    driver = webdriver.Chrome(options=options)
+    # Use the environment variable for Chromedriver path
+    chromedriver_path = os.environ.get('CHROMEDRIVER_PATH')
+    if chromedriver_path:
+        service = Service(executable_path=chromedriver_path)
+    else:
+        print("CHROMEDRIVER_PATH environment variable is not set.")
+        raise EnvironmentError("CHROMEDRIVER_PATH not set.")
+
+    # Initialize Chrome WebDriver
+    driver = webdriver.Chrome(service=service, options=options)
 
     return driver
 
@@ -63,12 +79,14 @@ def initialize_driver_with_retry(retries=3):
     """Attempts to initialize the driver, retrying in case of failure."""
     for attempt in range(retries):
         try:
+            print(f"Attempting to initialize WebDriver (Attempt {attempt + 1})...")
             return initialize_driver()
         except WebDriverException as e:
             if attempt < retries - 1:
                 print(f"Retrying to initialize driver (attempt {attempt + 1})...")
                 time.sleep(2)  # Wait before retrying
             else:
+                print(f"Failed to initialize WebDriver after {retries} attempts.")
                 raise e
 
 def load_cookies_and_navigate(driver):
@@ -449,13 +467,19 @@ def main():
     total_logged_fluid_ounces = 0.0
 
     try:
+        print("Initializing WebDriver...")
         driver = initialize_driver_with_retry()
+        print("WebDriver initialized.")
 
+        print("Loading cookies and navigating to Lose It!...")
         if not load_cookies_and_navigate(driver):
             print("Failed to load cookies and navigate.")
             return
 
+        print("Cookies loaded and navigated.")
+
         food_items = parse_nutritional_data(log_text)
+        print(f"Parsed {len(food_items)} food items from log.")
         logged_items = []
 
         for index, food_details in enumerate(food_items):
@@ -502,9 +526,13 @@ def main():
             visit_homepage(driver)
             time.sleep(3)
 
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
     finally:
         if driver:
             driver.quit()
+            print("WebDriver closed.")
 
     logging_output += f"Time to Log: {time.time() - start_time:.2f} seconds<br><br>"
     comparison = compare_items(food_items, logged_items, log_text, total_input_fluid_ounces, total_logged_fluid_ounces)
