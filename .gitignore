@@ -19,12 +19,9 @@ lib64/
 parts/
 sdist/
 var/
-wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
 # PyInstaller
 *.manifest
@@ -47,7 +44,6 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-cover/
 
 # Translations
 *.mo
@@ -70,7 +66,6 @@ instance/
 docs/_build/
 
 # PyBuilder
-.pybuilder/
 target/
 
 # Jupyter Notebook
@@ -83,35 +78,18 @@ ipython_config.py
 # pyenv
 .python-version
 
-# pipenv
-#Pipfile.lock
-
-# poetry
-#poetry.lock
-
-# pdm
-.pdm.toml
-.pdm-python
-.pdm-build/
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
-
-# Celery stuff
+# celery beat schedule file
 celerybeat-schedule
-celerybeat.pid
 
-# SageMath parsed files
-*.sage.py
-
-# Environments
+# dotenv
 .env
-.venv
-env/
+.env.*
+
+# virtualenv
 venv/
 ENV/
-env.bak/
-venv.bak/
+env/
+.venv/
 
 # Spyder project settings
 .spyderproject
@@ -125,7 +103,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-.dmypy.json
 dmypy.json
 
 # Pyre type checker
@@ -137,29 +114,6 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# PyCharm
-.idea/
-
-# Ignore log files
-logs/
-*.log
-
-# Ignore virtual environment (venv)
-venv/
-
-# Ignore Python cache
-__pycache__/
-
-# Ignore Chrome profile (if it contains local browser data)
-chrome_profile/
-
-# Ignore old backups
-old/
-
-# Ignore sensitive credentials (like API keys or local configurations)
+# Sensitive files
 loseit_cookies.json
 api_credentials.json
-
-# Ignore system-generated files
-.DS_Store
-tempCodeRunnerFile.py
