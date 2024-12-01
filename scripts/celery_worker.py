@@ -4,11 +4,17 @@ from celery import Celery
 import os
 import subprocess
 
-# Initialize Celery with Redis broker
-app = Celery('worker', broker=os.environ.get('REDIS_URL'))
+# Initialize Celery with Redis broker using rediss:// for SSL
+app = Celery('worker', broker=os.environ.get('REDIS_URL'), backend=os.environ.get('REDIS_URL'))
 
-# Optional: Set result backend if needed
-app.conf.result_backend = os.environ.get('REDIS_URL')
+# Optional: Additional Celery configuration
+app.conf.update(
+    broker_transport_options={
+        'ssl': {
+            'cert_reqs': None  # Upstash handles SSL certificates, so you can set cert_reqs to None
+        }
+    }
+)
 
 @app.task
 def run_import_foods(log_text):

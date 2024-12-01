@@ -7,7 +7,7 @@ from authlib.integrations.flask_client import OAuth
 from functools import wraps
 from werkzeug.middleware.proxy_fix import ProxyFix
 import logging
-from scripts.celery_worker import run_import_foods  # Import the Celery task
+from scripts.celery_worker import run_import_foods # Import the Celery task
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
