@@ -1,7 +1,6 @@
 # app.py
 
 import os
-from dotenv import load_dotenv
 import json
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
 from authlib.integrations.flask_client import OAuth
@@ -9,6 +8,7 @@ from functools import wraps
 from werkzeug.middleware.proxy_fix import ProxyFix
 import logging
 from scripts.celery_worker import run_import_foods  # Import the Celery task
+from dotenv import load_dotenv  # Add this import
 
 # Load environment variables from .env
 load_dotenv()
