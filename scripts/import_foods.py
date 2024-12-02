@@ -1,6 +1,7 @@
 # scripts/import_foods.py
 
 import os
+from dotenv import load_dotenv
 import subprocess
 import time
 import json
@@ -18,11 +19,23 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 import base64
 
+# Load environment variables from .env
+load_dotenv()
+
+# Configure logging
+env = os.getenv('ENV', 'dev')
+if env == 'dev':
+    logging_level = logging.DEBUG
+else:
+    logging_level = logging.INFO
+
+logging.basicConfig(level=logging_level, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 warnings.filterwarnings("ignore")
-logging.basicConfig(level=logging.CRITICAL, format='%(message)s')
 
 # ======= TOGGLE OPTIONS =======
-headless_mode = True  # Set to True for headless mode
+headless_mode = os.getenv('HEADLESS_MODE', 'True') == 'True'  # Use environment variable to toggle
 # =============================
 
 url = "https://www.loseit.com/"
@@ -46,14 +59,20 @@ def initialize_driver():
     chrome_bin = os.environ.get('GOOGLE_CHROME_BIN')
     if chrome_bin:
         options.binary_location = chrome_bin
+        logger.debug(f"Using Chrome binary at {chrome_bin}")
     else:
-        print("GOOGLE_CHROME_BIN environment variable is not set.")
+        logger.error("GOOGLE_CHROME_BIN environment variable is not set.")
         raise EnvironmentError("GOOGLE_CHROME_BIN not set.")
 
     # Run in headless mode
     if headless_mode:
         options.add_argument("--headless=new")  # Updated headless flag as per new Chrome versions
         options.add_argument("--disable-gpu")
+        logger.debug("Running in headless mode.")
+    else:
+        options.add_argument("--start-maximized")  # For visual debugging
+        logger.debug("Running in non-headless mode.")
+
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920x1080")
@@ -66,27 +85,29 @@ def initialize_driver():
     chromedriver_path = os.environ.get('CHROMEDRIVER_PATH')
     if chromedriver_path:
         service = Service(executable_path=chromedriver_path)
+        logger.debug(f"Using Chromedriver at {chromedriver_path}")
     else:
-        print("CHROMEDRIVER_PATH environment variable is not set.")
+        logger.error("CHROMEDRIVER_PATH environment variable is not set.")
         raise EnvironmentError("CHROMEDRIVER_PATH not set.")
 
     # Initialize Chrome WebDriver
     driver = webdriver.Chrome(service=service, options=options)
-
+    logger.info("Chrome WebDriver initialized.")
     return driver
 
 def initialize_driver_with_retry(retries=3):
     """Attempts to initialize the driver, retrying in case of failure."""
     for attempt in range(retries):
         try:
-            print(f"Attempting to initialize WebDriver (Attempt {attempt + 1})...")
+            logger.info(f"Attempting to initialize WebDriver (Attempt {attempt + 1})...")
             return initialize_driver()
         except WebDriverException as e:
+            logger.warning(f"WebDriver initialization failed on attempt {attempt + 1}: {e}")
             if attempt < retries - 1:
-                print(f"Retrying to initialize driver (attempt {attempt + 1})...")
+                logger.info("Retrying to initialize driver...")
                 time.sleep(2)  # Wait before retrying
             else:
-                print(f"Failed to initialize WebDriver after {retries} attempts.")
+                logger.error(f"Failed to initialize WebDriver after {retries} attempts.")
                 raise e
 
 def load_cookies_and_navigate(driver):
@@ -101,14 +122,16 @@ def load_cookies_and_navigate(driver):
                 if 'domain' in cookie:
                     del cookie['domain']
                 driver.add_cookie(cookie)
+            logger.info("Cookies loaded successfully.")
         except Exception as e:
-            print(f"Failed to decode and load cookies: {e}")
+            logger.error(f"Failed to decode and load cookies: {e}")
             return False
     else:
-        print("LOSEIT_COOKIES environment variable is not set.")
+        logger.error("LOSEIT_COOKIES environment variable is not set.")
         return False
     driver.get(url)
     time.sleep(3)
+    logger.info("Navigated to Lose It! homepage after loading cookies.")
     return True
 
 def navigate_day(driver, days):
@@ -122,31 +145,37 @@ def navigate_day(driver, days):
                     day_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, day_button_xpath)))
                     driver.execute_script("arguments[0].scrollIntoView(true);", day_button)
                     day_button.click()
+                    logger.info(f"Clicked '{direction}' day button.")
                     time.sleep(1)
                     break
                 except Exception as e:
+                    logger.warning(f"Navigation attempt {attempt + 1} failed for '{direction}': {e}")
                     if attempt == 2:
-                        print(f"Navigation failed for {direction}. Error: {e}")
-                        return
+                        logger.error(f"Failed to navigate '{direction}' after 3 attempts.")
     except Exception as e:
-        print(f"Failed to navigate {direction}: {e}")
+        logger.error(f"Failed to navigate '{direction}': {e}")
 
 def enter_placeholder_text_in_search_box(driver, tabindex):
     try:
-        search_box = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, f"//input[@tabindex='{tabindex}']")))
+        search_box = WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.XPATH, f"//input[@tabindex='{tabindex}']"))
+        )
         search_box.clear()
         search_box.click()
         search_box.send_keys("t3stf00dd03sn0t3xist")
         search_box.send_keys(Keys.ENTER)
+        logger.info(f"Entered placeholder text in search box with tabindex {tabindex}.")
     except Exception as e:
-        print(f"Failed to enter text in search box: {e}")
+        logger.error(f"Failed to enter text in search box: {e}")
 
 def wait_for_create_custom_food_button(driver):
     try:
-        create_food_button = WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(text(), 'Create a custom food')]")))
+        create_food_button = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((By.XPATH, "//div[contains(text(), 'Create a custom food')]"))
+        )
         return create_food_button
     except Exception as e:
-        print(f"Failed to locate 'Create a custom food' button: {e}")
+        logger.error(f"Failed to locate 'Create a custom food' button: {e}")
         return None
 
 def click_create_custom_food(driver):
@@ -155,9 +184,10 @@ def click_create_custom_food(driver):
         try:
             driver.execute_script("arguments[0].scrollIntoView(true);", create_food_button)
             create_food_button.click()
+            logger.info("Clicked 'Create a custom food' button.")
             return True
         except Exception as e:
-            print(f"Failed to click 'Create a custom food' button: {e}")
+            logger.error(f"Failed to click 'Create a custom food' button: {e}")
     return False
 
 def handle_fractional_serving(actions, serving_fraction):
@@ -169,19 +199,26 @@ def handle_fractional_serving(actions, serving_fraction):
     steps = fraction_map[closest_fraction]
     for _ in range(steps):
         actions.send_keys(Keys.UP).perform()
+    logger.debug(f"Handled fractional serving: {serving_fraction} as {closest_fraction} with {steps} steps.")
 
 def convert_fraction_to_float(fraction_str):
     if '/' in fraction_str:
         numerator, denominator = fraction_str.split('/')
         return float(numerator) / float(denominator)
     else:
-        return float(fraction_str)
+        try:
+            return float(fraction_str)
+        except ValueError:
+            logger.warning(f"Cannot convert fraction string to float: {fraction_str}")
+            return 0.0
 
 def enter_food_details(driver, food_item):
     try:
         time.sleep(2)
         actions = ActionChains(driver)
-        brand_input = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//input[@tabindex='1004']")))
+        brand_input = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//input[@tabindex='1004']"))
+        )
         brand_input.click()
         actions.send_keys(food_item.get("brand", "")).perform()
         actions.send_keys(Keys.TAB).perform()
@@ -208,14 +245,14 @@ def enter_food_details(driver, food_item):
             serving_fraction = 0.0
 
         actions.send_keys(str(whole_part)).perform()
-        
+
         time.sleep(1)  # Adding a short delay to allow the serving type to update
-        
+
         actions.send_keys(Keys.TAB).perform()
         if serving_fraction > 0:
             handle_fractional_serving(actions, serving_fraction)
         actions.send_keys(Keys.TAB).perform()
-        
+
         actions.send_keys(serving_type.split()[0]).perform()
         actions.send_keys(Keys.TAB).perform()
 
@@ -240,8 +277,9 @@ def enter_food_details(driver, food_item):
         actions.send_keys(Keys.TAB).perform()
 
         actions.send_keys(Keys.ENTER).perform()
+        logger.info(f"Entered food details for '{food_item.get('name', '')}'.")
     except Exception as e:
-        print(f"Failed to enter food details: {e}")
+        logger.error(f"Failed to enter food details: {e}")
 
 def parse_nutritional_data(content):
     parsed_items = []
@@ -296,6 +334,7 @@ def parse_nutritional_data(content):
     if current_item:
         parsed_items.append(current_item)
 
+    logger.info(f"Parsed {len(parsed_items)} food items from log.")
     return parsed_items
 
 def compare_items(input_items, logged_items, content, total_input_fluid_ounces, total_logged_fluid_ounces):
@@ -313,7 +352,7 @@ def compare_items(input_items, logged_items, content, total_input_fluid_ounces, 
 
     comparison_check = "<b style='color: #f9c74f;'>Comparison Check:</b><br>"
     for index, (input_item, logged_item) in enumerate(zip(input_items, logged_items), 1):
-        comparison_check += compare_values("name", input_item['name'], logged_item['name'])
+        comparison_check += compare_values("name", input_item['name'], logged_item.get('name', ''))
         comparison_check += compare_values("date", input_item.get('date', ''), logged_item.get('date', ''))
         comparison_check += compare_values("meal", input_item.get('meal', ''), logged_item.get('meal', ''))
         comparison_check += compare_values("brand", input_item.get('brand', ''), logged_item.get('brand', ''))
@@ -358,9 +397,9 @@ def compare_values(field_name, input_value, logged_value):
         input_value_num = float(input_value)
         logged_value_num = float(logged_value)
         if abs(input_value_num - logged_value_num) < 1e-6:
-            return f'<span style="color: green;">**{field_name}:** {logged_value} (matches input value)</span><br>'
+            return f'<span style="color: green;">**{field_name}:** {logged_value_num} (matches input value)</span><br>'
         else:
-            return f'<span style="color: red;">**{field_name}:** {logged_value} (does not match input value {input_value})</span><br>'
+            return f'<span style="color: red;">**{field_name}:** {logged_value_num} (does not match input value {input_value})</span><br>'
     except ValueError:
         # Fallback to string comparison
         if str(input_value).strip() == str(logged_value).strip():
@@ -372,27 +411,32 @@ def navigate_to_water_goals_page(driver):
     """Navigates to the water intake goals page."""
     goals_url = "https://www.loseit.com/#Goals:Water%20Intake%5EWater%20Intake"
     driver.get(goals_url)
+    logger.info("Navigated to water intake goals page.")
     time.sleep(3)
 
 def navigate_water_day(driver, days):
     """Navigate forward or backward by 'days' in the Water Intake interface."""
     try:
         direction = "next" if days > 0 else "previous"
-        day_button_xpath = "//div[@role='button' and @title='{}']".format("Next" if direction == "next" else "Previous")
+        day_button_title = "Next" if direction == "next" else "Previous"
+        day_button_xpath = f"//div[@role='button' and @title='{day_button_title}']"
         for _ in range(abs(days)):
             for attempt in range(3):
                 try:
-                    day_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, day_button_xpath)))
+                    day_button = WebDriverWait(driver, 20).until(
+                        EC.element_to_be_clickable((By.XPATH, day_button_xpath))
+                    )
                     driver.execute_script("arguments[0].scrollIntoView(true);", day_button)
                     day_button.click()
+                    logger.info(f"Clicked '{day_button_title}' water day button.")
                     time.sleep(1)
                     break
                 except Exception as e:
+                    logger.warning(f"Water day navigation attempt {attempt + 1} failed: {e}")
                     if attempt == 2:
-                        print(f"Navigation failed for {direction} on water intake page: {e}")
-                        return
+                        logger.error(f"Failed to navigate '{direction}' water day after 3 attempts.")
     except Exception as e:
-        print(f"Failed to navigate {direction} on water intake page: {e}")
+        logger.error(f"Failed to navigate '{direction}' on water intake page: {e}")
 
 def get_current_water_intake(driver):
     """Reads the current water intake value from the water intake page."""
@@ -402,9 +446,10 @@ def get_current_water_intake(driver):
             EC.visibility_of_element_located((By.XPATH, "//input[@type='text' and contains(@class, 'gwt-TextBox')]"))
         )
         current_water = float(water_input.get_attribute('value') or 0.0)
+        logger.info(f"Current water intake: {current_water} oz.")
         return current_water
     except Exception as e:
-        print(f"Failed to read current water intake: {e}")
+        logger.error(f"Failed to read current water intake: {e}")
         return 0.0
 
 def set_water_intake(driver, water_oz):
@@ -417,15 +462,17 @@ def set_water_intake(driver, water_oz):
         water_input.send_keys(str(water_oz))
         time.sleep(1)
         water_input.send_keys(Keys.ENTER)  # Press Enter to submit
+        logger.info(f"Set water intake to {water_oz} oz.")
         time.sleep(2)
     except Exception as e:
-        print(f"Failed to set water intake: {e}")
+        logger.error(f"Failed to set water intake: {e}")
 
 def update_water_intake(driver, food_details, days_difference):
     if "fluid ounces" in food_details.get("serving_quantity", "").lower():
         try:
             fluid_oz_match = re.search(r"(\d+\.?\d*)", food_details["serving_quantity"])
             if not fluid_oz_match:
+                logger.warning("No fluid ounces found in serving_quantity.")
                 return "", 0.0
             fluid_oz = float(fluid_oz_match.group(1))
 
@@ -441,9 +488,10 @@ def update_water_intake(driver, food_details, days_difference):
             # Set the new water intake value
             set_water_intake(driver, updated_water)
 
+            logger.info(f"Updated water intake from {current_water} oz to {updated_water} oz.")
             return f"Updated the water intake from {current_water} oz to {updated_water} oz", fluid_oz
         except Exception as e:
-            print(f"Failed to update water intake: {e}")
+            logger.error(f"Failed to update water intake: {e}")
             return "", 0.0
     return "", 0.0
 
@@ -451,14 +499,18 @@ def visit_homepage(driver):
     try:
         homepage_url = "https://www.loseit.com/"
         driver.get(homepage_url)
+        logger.info("Visited homepage.")
         time.sleep(3)
     except Exception as e:
-        print(f"Failed to visit the homepage: {e}")
+        logger.error(f"Failed to visit the homepage: {e}")
 
 def main():
     start_time = time.time()
 
     log_text = os.getenv('LOG_TEXT', '')
+    if not log_text:
+        logger.error("No LOG_TEXT provided.")
+        return
 
     driver = None
     logging_output = "<b style='color: #f9c74f;'>Logging Output:</b><br>"
@@ -467,19 +519,18 @@ def main():
     total_logged_fluid_ounces = 0.0
 
     try:
-        print("Initializing WebDriver...")
+        logger.info("Initializing WebDriver...")
         driver = initialize_driver_with_retry()
-        print("WebDriver initialized.")
+        logger.info("WebDriver initialized.")
 
-        print("Loading cookies and navigating to Lose It!...")
+        logger.info("Loading cookies and navigating to Lose It!...")
         if not load_cookies_and_navigate(driver):
-            print("Failed to load cookies and navigate.")
+            logger.error("Failed to load cookies and navigate.")
             return
 
-        print("Cookies loaded and navigated.")
+        logger.info("Cookies loaded and navigated.")
 
         food_items = parse_nutritional_data(log_text)
-        print(f"Parsed {len(food_items)} food items from log.")
         logged_items = []
 
         for index, food_details in enumerate(food_items):
@@ -488,7 +539,12 @@ def main():
             try:
                 food_date_obj = datetime.strptime(food_date, "%m/%d/%Y")
             except ValueError:
-                food_date_obj = datetime.strptime(food_date + f"/{datetime.now().year}", "%m/%d/%Y")
+                # If year is missing, append current year
+                try:
+                    food_date_obj = datetime.strptime(f"{food_date}/{datetime.now().year}", "%m/%d/%Y")
+                except ValueError as ve:
+                    logger.error(f"Invalid date format for '{food_date}': {ve}")
+                    continue
             current_date_obj = datetime.strptime(current_date, "%m/%d/%Y")
             days_difference = (food_date_obj - current_date_obj).days
             if days_difference != 0:
@@ -499,7 +555,7 @@ def main():
             enter_placeholder_text_in_search_box(driver, tabindex=meal_tabindex.get(meal, "400"))
 
             if not click_create_custom_food(driver):
-                print(f"Failed to find 'Create a custom food' button for {food_details['name']}. Skipping to next.")
+                logger.warning(f"Failed to find 'Create a custom food' button for '{food_details['name']}'. Skipping to next.")
                 continue
 
             # Log food details
@@ -524,19 +580,19 @@ def main():
             # Refresh the page to reset for the next item
             driver.refresh()
             visit_homepage(driver)
-            time.sleep(3)
 
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        logger.error(f"An unexpected error occurred: {e}")
 
     finally:
         if driver:
             driver.quit()
-            print("WebDriver closed.")
+            logger.info("WebDriver closed.")
 
     logging_output += f"Time to Log: {time.time() - start_time:.2f} seconds<br><br>"
     comparison = compare_items(food_items, logged_items, log_text, total_input_fluid_ounces, total_logged_fluid_ounces)
-    print(logging_output + comparison)
+    logger.info(logging_output + comparison)
+    print(logging_output + comparison)  # Ensure the output is sent to stdout
 
 if __name__ == "__main__":
     main()
