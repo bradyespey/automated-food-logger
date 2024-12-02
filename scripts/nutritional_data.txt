@@ -1,98 +1,63 @@
-Here's the nutritional information for your lunch on 7/27:
+Food Name: Test Modelo Beer  
+Date: 12/3
+Meal: Snacks
+Brand: Modelo
+Icon: Beer  
+Serving Size: 12 fluid ounces
+Calories: 600  
+Fat (g): 2 
+Saturated Fat (g): 3.5  
+Cholesterol (mg): 4.25  
+Sodium (mg): 45  
+Carbs (g): 45  
+Fiber (g): 17  
+Sugar (g): 0  
+Protein (g): 6
 
----
+Food Name: Test Pina Colada  
+Date: 12/2
+Meal: Breakfast  
+Brand: Bouldin Acres  
+Icon: Mixed Drink  
+Serving Size: 28 fluid ounces (1 glass)  
+Calories: 400  
+Fat (g): 18  
+Saturated Fat (g): 14  
+Cholesterol (mg): 40  
+Sodium (mg): 75  
+Carbs (g): 50  
+Fiber (g): 0  
+Sugar (g): 46  
+Protein (g): 
 
-**Food Name:** Test Miller Light Beer  
-**Date:** 8/17  
-**Meal:** Lunch  
-**Brand:** Lone Star  
-**Icon:** Beer  
-**Serving Size:** 12 fluid ounces  
-**Calories:** 95  
-**Fat (g):** 0  
-**Saturated Fat (g):** 0  
-**Cholesterol (mg):** 0  
-**Sodium (mg):** 5  
-**Carbs (g):** 3.2  
-**Fiber (g):**   
-**Sugar (g):** 0  
-**Protein (g):** 0.7  
-**Hydration Logging:** Drink Type: Beer; Hydration Multiplier: 0.9; Effective Hydration: 10.8 fluid ounces  
+Food Name: Test Nachos w/Queso  
+Date: 12/4
+Meal: Lunch
+Brand: 
+Icon: Tortilla Chip  
+Serving Size: 1/2 each (shared)  
+Calories: 375  
+Fat (g): 23  
+Saturated Fat (g): 12  
+Cholesterol (mg): 40  
+Sodium (mg): 650  
+Carbs (g): 35  
+Fiber (g): 3  
+Sugar (g): 2  
+Protein (g): 9  
 
----
-
-**Food Name:** Test Pizza Hut Large Cheese Pizza  
-**Date:** 8/16  
-**Meal:** Lunch  
-**Brand:** Whole Foods  
-**Icon:** Pizza  
-**Serving Size:** 1 large slice  
-**Calories:** 380  
-**Fat (g):** 15  
-**Saturated Fat (g):** 7  
-**Cholesterol (mg):** 35  
-**Sodium (mg):** 640  
-**Carbs (g):** 45  
-**Fiber (g):** 2  
-**Sugar (g):** 4  
-**Protein (g):** 17  
-
----
-
-**Food Name:** Test Nature Valley Crunchy Oats 'n Honey Bar  
-**Date:** 8/17  
-**Meal:** Dinner  
-**Brand:** Nature Valley  
-**Icon:** Bar  
-**Serving Size:** 1 package (2 bars)  
-**Calories:** 190  
-**Fat (g):** 6  
-**Saturated Fat (g):** 0.5  
-**Cholesterol (mg):** 0  
-**Sodium (mg):** 140  
-**Carbs (g):** 29  
-**Fiber (g):** 4  
-**Sugar (g):** 11  
-**Protein (g):** 4  
-
----
-
-**Food Name:** Test Budweiser Beer  
-**Date:** 8/16  
-**Meal:** Lunch  
-**Brand:** Budweiser  
-**Icon:** Beer  
-**Serving Size:** 12 fluid ounces  
-**Calories:** 145  
-**Fat (g):** 0  
-**Saturated Fat (g):** 0  
-**Cholesterol (mg):** 0  
-**Sodium (mg):** 10  
-**Carbs (g):** 10.6  
-**Fiber (g):** 0  
-**Sugar (g):** 0  
-**Protein (g):** 1.3  
-**Hydration Logging:** Drink Type: Beer; Hydration Multiplier: 0.9; Effective Hydration: 10.8 fluid ounces  
-
----
-
-**Food Name:** Test Lucien Albrecht Prosecco  
-**Date:** 8/17  
-**Meal:** Breakfast  
-**Brand:** Lucien Albrecht  
-**Icon:** Wine, White  
-**Serving Size:** 6 fluid ounces  
-**Calories:** 96  
-**Fat (g):** 0  
-**Saturated Fat (g):** 0  
-**Cholesterol (mg):** 0  
-**Sodium (mg):** 5  
-**Carbs (g):** 3.2  
-**Fiber (g):** 0  
-**Sugar (g):** 1.6  
-**Protein (g):** 0  
-**Hydration Logging:** Drink Type: Wine; Hydration Multiplier: 0.8; Effective Hydration: 4.8 fluid ounces  
-
----`
-
-This should accurately reflect your meal and drink choices based on the photos and details provided. Let me know if you need further adjustments!
+Food Name: Test Nitro Espresso Martini  
+Date: 12/3
+Meal: Dinner  
+Brand: Homemade
+Icon: Mixed Drink  
+Serving Size: 4.5 fluid ounces (1 glass)  
+Calories: 210  
+Fat (g): 0  
+Saturated Fat (g): 0  
+Cholesterol (mg): 0  
+Sodium (mg): 5  
+Carbs (g): 10  
+Fiber (g): 0  
+Sugar (g): 9  
+Protein (g): 0

@@ -1,7 +1,6 @@
 # scripts/import_foods.py
 
 import os
-from dotenv import load_dotenv
 import subprocess
 import time
 import json
@@ -13,17 +12,19 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.action_chains import ActionChains
 import base64
+from dotenv import load_dotenv
 
-# Load environment variables from .env
-load_dotenv()
+# Load environment variables from .env in development
+env = os.getenv('ENV', 'dev')
+if env == 'dev':
+    load_dotenv()
 
 # Configure logging
-env = os.getenv('ENV', 'dev')
 if env == 'dev':
     logging_level = logging.DEBUG
 else:
@@ -35,7 +36,7 @@ logger = logging.getLogger(__name__)
 warnings.filterwarnings("ignore")
 
 # ======= TOGGLE OPTIONS =======
-headless_mode = os.getenv('HEADLESS_MODE', 'True') == 'True'  # Use environment variable to toggle
+headless_mode = os.getenv('HEADLESS_MODE', 'True') == 'True'
 # =============================
 
 url = "https://www.loseit.com/"
@@ -66,7 +67,7 @@ def initialize_driver():
 
     # Run in headless mode
     if headless_mode:
-        options.add_argument("--headless=new")  # Updated headless flag as per new Chrome versions
+        options.add_argument("--headless")  # Use "--headless=new" if using Chrome 109+
         options.add_argument("--disable-gpu")
         logger.debug("Running in headless mode.")
     else:
@@ -112,27 +113,71 @@ def initialize_driver_with_retry(retries=3):
 
 def load_cookies_and_navigate(driver):
     driver.get(url)
-    cookies_base64 = os.environ.get('LOSEIT_COOKIES', '')
-    if cookies_base64:
-        try:
-            cookies_json = base64.b64decode(cookies_base64).decode('utf-8')
-            cookies = json.loads(cookies_json)
-            for cookie in cookies:
-                # Adjust cookie domain if necessary
-                if 'domain' in cookie:
-                    del cookie['domain']
-                driver.add_cookie(cookie)
-            logger.info("Cookies loaded successfully.")
-        except Exception as e:
-            logger.error(f"Failed to decode and load cookies: {e}")
+    logged_in = check_logged_in(driver)
+    if not logged_in:
+        login_success = login_using_credentials(driver)
+        if not login_success:
+            logger.error("Failed to log in using credentials.")
             return False
     else:
-        logger.error("LOSEIT_COOKIES environment variable is not set.")
-        return False
+        logger.info("Already logged in.")
     driver.get(url)
     time.sleep(3)
-    logger.info("Navigated to Lose It! homepage after loading cookies.")
+    logger.info("Navigated to Lose It! homepage after logging in.")
     return True
+
+def check_logged_in(driver):
+    try:
+        # Check for an element that's only present when logged in
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.XPATH, "//a[contains(@href, '/profile')]"))
+        )
+        logger.debug("User is logged in.")
+        return True
+    except Exception:
+        logger.debug("User is not logged in.")
+        return False
+
+def login_using_credentials(driver):
+    email = os.environ.get('LOSEIT_EMAIL')
+    password = os.environ.get('LOSEIT_PASSWORD')
+    if not email or not password:
+        logger.error("LOSEIT_EMAIL or LOSEIT_PASSWORD environment variable not set.")
+        return False
+    try:
+        login_url = "https://my.loseit.com/login?r=https%3A%2F%2Fwww.loseit.com%2F"
+        driver.get(login_url)
+        logger.debug("Navigated to login page.")
+
+        # Wait for the email input field to be clickable
+        email_input = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.ID, 'email'))
+        )
+        logger.debug("Email input field located.")
+        email_input.clear()
+        email_input.send_keys(email)
+        logger.debug("Email entered.")
+
+        # Find and fill the password input field
+        password_input = driver.find_element(By.ID, 'password')
+        password_input.clear()
+        password_input.send_keys(password)
+        logger.debug("Password entered.")
+
+        # Find and click the login button
+        login_button = driver.find_element(By.XPATH, "//button[@type='submit']")
+        login_button.click()
+        logger.debug("Login button clicked.")
+
+        # Wait for login to complete by checking for an element present after login
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//a[contains(@href, '/profile')]"))
+        )
+        logger.info("Logged in successfully using credentials.")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to log in using credentials: {e}")
+        return False
 
 def navigate_day(driver, days):
     try:

@@ -2,16 +2,21 @@
 
 from celery import Celery
 import os
-import subprocess
-import ssl
-from dotenv import load_dotenv
 import logging
+from dotenv import load_dotenv
 
-# Load environment variables from .env
-load_dotenv()
+# Load environment variables from .env in development
+env = os.getenv('ENV', 'dev')
+if env == 'dev':
+    load_dotenv()
 
 # Configure logging for Celery
-logging.basicConfig(level=logging.INFO)
+if env == 'dev':
+    logging_level = logging.DEBUG
+else:
+    logging_level = logging.INFO
+
+logging.basicConfig(level=logging_level)
 logger = logging.getLogger(__name__)
 
 # Initialize Celery with Redis broker and backend
@@ -24,43 +29,43 @@ app = Celery(
 
 # Update Celery configuration to include SSL parameters if using SSL (e.g., Upstash)
 if redis_url.startswith('rediss://'):
+    import ssl
     app.conf.broker_transport_options = {
         'ssl': {
-            'ssl_cert_reqs': ssl.CERT_NONE  # Use CERT_REQUIRED in production
+            'ssl_cert_reqs': ssl.CERT_NONE  # Use ssl.CERT_REQUIRED in production for security
         }
     }
-    app.conf.result_transport_options = {
+    app.conf.result_backend_transport_options = {
         'ssl': {
             'ssl_cert_reqs': ssl.CERT_NONE
         }
     }
 
+# Address the deprecation warning
+app.conf.broker_connection_retry_on_startup = True
+
 @app.task(bind=True, max_retries=3, default_retry_delay=10)
 def run_import_foods(self, log_text):
     """
-    Celery task to run the import_foods.py script.
+    Celery task to run the main food logging process.
     """
     logger.info(f"Task {self.request.id} started with log_text: {log_text}")
     try:
-        env = os.environ.copy()
-        env['LOG_TEXT'] = log_text
-        result = subprocess.run(
-            ["python", "scripts/import_foods.py"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=env,
-            check=True  # Raise CalledProcessError if the command fails
-        )
+        # Import the main process function
+        from scripts.main import main as process_log
+
+        # Set the LOG_TEXT environment variable
+        os.environ['LOG_TEXT'] = log_text
+
+        # Run the main function
+        process_log()
+
         logger.info(f"Task {self.request.id} succeeded.")
-        return result.stdout + result.stderr
-    except subprocess.CalledProcessError as exc:
-        logger.error(f"Task {self.request.id} failed: {exc.stderr}")
+        return "Food log processed successfully."
+    except Exception as exc:
+        logger.error(f"Task {self.request.id} failed: {exc}")
         try:
             self.retry(exc=exc)
         except self.MaxRetriesExceededError:
             logger.error(f"Task {self.request.id} exceeded max retries.")
-            return f"Task failed after retries: {exc.stderr}"
-    except Exception as e:
-        logger.error(f"Task {self.request.id} encountered an unexpected error: {e}")
-        return f"Unexpected error: {str(e)}"
+            return f"Task failed after retries: {exc}"
