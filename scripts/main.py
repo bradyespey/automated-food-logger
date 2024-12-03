@@ -5,6 +5,10 @@ import logging
 from datetime import date, datetime
 from dotenv import load_dotenv
 
+# Ensure logs directory exists
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
 # Load environment variables
 load_dotenv()
 
@@ -32,7 +36,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("tempy.log")
+        logging.FileHandler(os.path.join(LOG_DIR, "main.log"))
     ]
 )
 logger = logging.getLogger(__name__)
@@ -53,12 +57,14 @@ def main(log_text):
         if not login(driver, LOSEIT_EMAIL, LOSEIT_PASSWORD):
             logger.error("Login failed. Exiting script.")
             output_messages.append("<span style='color: red;'>Login failed.</span>")
+            driver.save_screenshot(os.path.join(LOG_DIR, "login_failed.png"))
             return "<br>".join(output_messages)
 
         # Step 2: Verify login
         if not verify_login(driver):
             logger.error("Login verification failed. Exiting script.")
             output_messages.append("<span style='color: red;'>Login verification failed.</span>")
+            driver.save_screenshot(os.path.join(LOG_DIR, "login_verification_failed.png"))
             return "<br>".join(output_messages)
 
         # Parse food items from the log text

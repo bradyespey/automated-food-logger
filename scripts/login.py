@@ -1,6 +1,7 @@
 # scripts/login.py
 
 import logging
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -10,6 +11,19 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import TimeoutException, WebDriverException, NoSuchElementException, ElementNotInteractableException
 
+# Ensure logs directory exists
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(os.path.join(LOG_DIR, "login.log"))
+    ]
+)
 logger = logging.getLogger(__name__)
 
 def initialize_driver(headless=True):
@@ -108,19 +122,19 @@ def login(driver, email, password):
         return True
     except TimeoutException:
         logger.error("Timeout while attempting to log in. Elements not found.")
-        driver.save_screenshot("login_timeout.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "login_timeout.png"))
         return False
     except NoSuchElementException as e:
         logger.error(f"Login element not found: {e}", exc_info=True)
-        driver.save_screenshot("login_no_element.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "login_no_element.png"))
         return False
     except ElementNotInteractableException as e:
         logger.error(f"Login element not interactable: {e}", exc_info=True)
-        driver.save_screenshot("login_not_interactable.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "login_not_interactable.png"))
         return False
     except Exception as e:
         logger.error(f"An unexpected error occurred during login: {e}", exc_info=True)
-        driver.save_screenshot("login_unexpected_error.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "login_unexpected_error.png"))
         return False
 
 def verify_login(driver):
@@ -144,13 +158,13 @@ def verify_login(driver):
         return True
     except TimeoutException:
         logger.error("Login may have failed; current date not found on home page.")
-        driver.save_screenshot("verify_login_timeout.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "verify_login_timeout.png"))
         return False
     except NoSuchElementException as e:
         logger.error(f"Verification element not found: {e}", exc_info=True)
-        driver.save_screenshot("verify_login_no_element.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "verify_login_no_element.png"))
         return False
     except Exception as e:
         logger.error(f"An unexpected error occurred during login verification: {e}", exc_info=True)
-        driver.save_screenshot("verify_login_unexpected_error.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "verify_login_unexpected_error.png"))
         return False

@@ -1,7 +1,21 @@
 # scripts/utils.py
 
 import logging
+import os
 
+# Ensure logs directory exists
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Adjust to DEBUG if needed
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(os.path.join(LOG_DIR, "utils.log"))
+    ]
+)
 logger = logging.getLogger(__name__)
 
 def parse_food_items(log_text):
@@ -46,10 +60,13 @@ def compare_numeric_values(field_name, input_value, logged_value):
         input_value_num = float(input_value)
         logged_value_num = float(logged_value)
         if abs(input_value_num - logged_value_num) < 1e-6:
+            logger.info(f"{field_name}: Match found ({logged_value_num})")
             return f'<span style="color: green;">**{field_name}:** {logged_value_num} (matches input value {input_value_num})</span><br>'
         else:
+            logger.warning(f"{field_name}: Mismatch (input: {input_value_num}, logged: {logged_value_num})")
             return f'<span style="color: red;">**{field_name}:** {logged_value_num} (does not match input value {input_value_num})</span><br>'
     except ValueError:
+        logger.error(f"Invalid numerical values for comparison in {field_name}: {input_value}, {logged_value}")
         return f'<span style="color: red;">**{field_name}:** Invalid numerical values for comparison</span><br>'
 
 def compare_values(field_name, input_value, logged_value):
@@ -64,19 +81,22 @@ def compare_values(field_name, input_value, logged_value):
     Returns:
         str: HTML-formatted comparison result.
     """
-    # Try to compare as floats first
     try:
         input_value_num = float(input_value)
         logged_value_num = float(logged_value)
         if abs(input_value_num - logged_value_num) < 1e-6:
+            logger.info(f"{field_name}: Match found ({logged_value_num})")
             return f'<span style="color: green;">**{field_name}:** {logged_value_num} (matches input value)</span><br>'
         else:
+            logger.warning(f"{field_name}: Mismatch (input: {input_value_num}, logged: {logged_value_num})")
             return f'<span style="color: red;">**{field_name}:** {logged_value_num} (does not match input value {input_value})</span><br>'
     except ValueError:
         # Fallback to string comparison
         if str(input_value).strip().lower() == str(logged_value).strip().lower():
+            logger.info(f"{field_name}: String match found")
             return f'<span style="color: green;">**{field_name}:** {logged_value} (matches input value)</span><br>'
         else:
+            logger.warning(f"{field_name}: String mismatch")
             return f'<span style="color: red;">**{field_name}:** {logged_value} (does not match input value {input_value})</span><br>'
 
 def compare_items(input_items, logged_items):
@@ -96,6 +116,7 @@ def compare_items(input_items, logged_items):
         # Find matching logged item
         logged_item = next((item for item in logged_items if item.get('Food Name', '') == input_item.get('Food Name', '')), None)
         if not logged_item:
+            logger.error(f"Logged item not found for {input_item.get('Food Name', 'Unknown')}")
             comparison_check += f"<span style='color: red;'>Logged item not found for {input_item.get('Food Name', '')}</span><br><br>"
             continue
 
@@ -119,6 +140,7 @@ def compare_items(input_items, logged_items):
     total_input_fluid_ounces = sum(float(item.get('fluid_ounces', 0.0)) for item in input_items if item.get('fluid_ounces') is not None)
     total_logged_fluid_ounces = sum(float(item.get('fluid_ounces_added', 0.0)) for item in logged_items if item.get('fluid_ounces_added') is not None)
 
+    logger.info(f"Total fluid ounces - Input: {total_input_fluid_ounces}, Logged: {total_logged_fluid_ounces}")
     comparison_check += "<b style='color: #f9c74f;'>Total Fluid Ounces Comparison:</b><br>"
     comparison_check += compare_numeric_values("Total Fluid Ounces", total_input_fluid_ounces, total_logged_fluid_ounces)
 

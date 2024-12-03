@@ -1,5 +1,6 @@
 # scripts/navigation.py
 
+import os
 import logging
 from datetime import datetime
 import time
@@ -9,6 +10,22 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
 
+# ----------------------- Configuration -----------------------
+
+# Dynamically set the base directory for logs and screenshots
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(os.path.join(LOG_DIR, "navigation.log"))  # Log to a file in LOG_DIR
+    ]
+)
 logger = logging.getLogger(__name__)
 
 def get_current_date(driver):
@@ -59,7 +76,7 @@ def navigate_to_date(driver, target_date):
                     logger.info("Clicked 'Next Day' button.")
                 except TimeoutException:
                     logger.error("Next Day button not found or not clickable.")
-                    driver.save_screenshot("next_button_not_found.png")
+                    driver.save_screenshot(os.path.join(LOG_DIR, "next_button_not_found.png"))
                     return False
                 except ElementClickInterceptedException as e:
                     logger.error(f"Element click intercepted: {e}")
@@ -76,7 +93,7 @@ def navigate_to_date(driver, target_date):
                     logger.info("Clicked 'Previous Day' button.")
                 except TimeoutException:
                     logger.error("Previous Day button not found or not clickable.")
-                    driver.save_screenshot("prev_button_not_found.png")
+                    driver.save_screenshot(os.path.join(LOG_DIR, "prev_button_not_found.png"))
                     return False
                 except ElementClickInterceptedException as e:
                     logger.error(f"Element click intercepted: {e}")
@@ -126,7 +143,7 @@ def select_search_box(driver, meal_name):
     except TimeoutException:
         logger.error(f"Search input for meal '{meal_name}' not found or not clickable.")
         # Optional: Take a screenshot for debugging
-        driver.save_screenshot(f"select_search_box_{meal_name}_timeout.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, f"select_search_box_{meal_name}_timeout.png"))
         return None
     except Exception as e:
         logger.error(f"An error occurred while selecting search box for meal '{meal_name}': {e}", exc_info=True)
@@ -153,7 +170,7 @@ def wait_for_fixed_glass_invisibility(driver):
     except TimeoutException:
         logger.error("'fixedGlass' overlay is still visible after waiting.")
         # Optional: Take a screenshot for debugging
-        driver.save_screenshot("fixed_glass_still_visible.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "fixed_glass_still_visible.png"))
         return False
 
 def click_create_custom_food(driver):
@@ -179,7 +196,7 @@ def click_create_custom_food(driver):
     except TimeoutException:
         logger.error("Create Food button not found or not clickable.")
         # Optional: Take a screenshot for debugging
-        driver.save_screenshot("click_create_food_timeout.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "click_create_food_timeout.png"))
         return False
     except ElementClickInterceptedException as e:
         logger.error(f"Element click intercepted: {e}")
@@ -191,7 +208,7 @@ def click_create_custom_food(driver):
             return True
         except Exception as ex:
             logger.error(f"Failed to click 'Create a custom food' button via JavaScript: {ex}", exc_info=True)
-            driver.save_screenshot("click_create_food_js_timeout.png")
+            driver.save_screenshot(os.path.join(LOG_DIR, "click_create_food_js_timeout.png"))
             return False
     except Exception as e:
         logger.error(f"An error occurred while clicking 'Create a custom food' button: {e}", exc_info=True)

@@ -15,13 +15,17 @@ from selenium.common.exceptions import (
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+# Ensure logs directory exists
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,  # Adjust as needed
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("water_intake.log")
+        logging.FileHandler(os.path.join(LOG_DIR, "water_intake.log"))
     ]
 )
 logger = logging.getLogger(__name__)
@@ -116,7 +120,10 @@ def set_water_intake(driver, water_oz):
 
         # Wait until the input box value matches the new intake
         WebDriverWait(driver, 10).until(
-            EC.text_to_be_present_in_element_value((By.XPATH, "//input[@type='text' and contains(@class, 'GCJ-IGUKWC')]"), str(water_oz))
+            EC.text_to_be_present_in_element_value(
+                (By.XPATH, "//input[@type='text' and contains(@class, 'GCJ-IGUKWC')]"),
+                str(water_oz)
+            )
         )
         logger.info(f"Verified new water intake in input box: {water_oz} oz")
 
@@ -132,8 +139,10 @@ def set_water_intake(driver, water_oz):
         # Do not attempt to verify the intake after Record to avoid discrepancies
     except TimeoutException:
         logger.error("Water intake input box or Record button not found or not clickable.")
+        driver.save_screenshot(os.path.join(LOG_DIR, "set_water_intake_timeout.png"))
     except Exception as e:
         logger.error(f"Failed to set water intake: {e}", exc_info=True)
+        driver.save_screenshot(os.path.join(LOG_DIR, "set_water_intake_error.png"))
 
 def navigate_to_main_page(driver):
     """

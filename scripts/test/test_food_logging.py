@@ -27,16 +27,25 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Load environment variables from .env file
 load_dotenv()
 
+# Ensure logs directory exists
+LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("../../logs/test_food_logging.log")  # Log to a file for persistent records
+        logging.FileHandler(os.path.join(LOG_DIR, "test_food_logging.log"))  # Log to a file in LOG_DIR
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Dynamically construct path to nutritional data file
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+TXT_FILE_PATH = os.path.join(BASE_DIR, "txt/nutritional_data.txt")
+logger.info(f"Using nutritional data file path: {TXT_FILE_PATH}")
 
 # Retrieve credentials and settings from environment variables
 LOSEIT_EMAIL = os.getenv('LOSEIT_EMAIL')
@@ -144,7 +153,7 @@ def verify_login(driver):
     except TimeoutException:
         logger.error("Login may have failed; current date not found on home page.")
         # Optional: Take a screenshot for debugging
-        driver.save_screenshot("verify_login_timeout.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "verify_login_timeout.png"))
         return False
 
 def get_current_date(driver):
@@ -204,7 +213,7 @@ def navigate_to_date(driver, target_date):
                     logger.info("Clicked 'Next Day' button.")
                 except TimeoutException:
                     logger.error("Next Day button not found or not clickable.")
-                    driver.save_screenshot("next_button_not_found.png")
+                    driver.save_screenshot(os.path.join(LOG_DIR, "next_button_not_found.png"))
                     return False
                 except ElementClickInterceptedException as e:
                     logger.error(f"Element click intercepted: {e}")
@@ -221,7 +230,7 @@ def navigate_to_date(driver, target_date):
                     logger.info("Clicked 'Previous Day' button.")
                 except TimeoutException:
                     logger.error("Previous Day button not found or not clickable.")
-                    driver.save_screenshot("prev_button_not_found.png")
+                    driver.save_screenshot(os.path.join(LOG_DIR, "prev_button_not_found.png"))
                     return False
                 except ElementClickInterceptedException as e:
                     logger.error(f"Element click intercepted: {e}")
@@ -311,7 +320,7 @@ def wait_for_fixed_glass_invisibility(driver):
     except TimeoutException:
         logger.error("'fixedGlass' overlay is still visible after waiting.")
         # Optional: Take a screenshot for debugging
-        driver.save_screenshot("fixed_glass_still_visible.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "fixed_glass_still_visible.png"))
         return False
 
 def click_create_custom_food(driver):
@@ -340,7 +349,7 @@ def click_create_custom_food(driver):
     except TimeoutException:
         logger.error("Create Food button not found or not clickable.")
         # Optional: Take a screenshot for debugging
-        driver.save_screenshot("click_create_food_timeout.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "click_create_food_timeout.png"))
         return False
     except ElementClickInterceptedException as e:
         logger.error(f"Element click intercepted: {e}")
@@ -352,7 +361,7 @@ def click_create_custom_food(driver):
             return True
         except Exception as ex:
             logger.error(f"Failed to click 'Create a custom food' button via JavaScript: {ex}", exc_info=True)
-            driver.save_screenshot("click_create_food_js_timeout.png")
+            driver.save_screenshot(os.path.join(LOG_DIR, "click_create_food_js_timeout.png"))
             return False
     except Exception as e:
         logger.error(f"An error occurred while clicking 'Create a custom food' button: {e}", exc_info=True)
@@ -562,7 +571,7 @@ def save_food(driver):
         return True
     except Exception as e:
         logger.error(f"An error occurred while clicking 'Add Food' button: {e}", exc_info=True)
-        driver.save_screenshot("save_food_error.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "save_food_error.png"))
         return False
 
 def parse_food_items(filename):
@@ -606,8 +615,12 @@ def main():
             return
 
         # Read food items from the text file
-        food_items = parse_food_items('../../txt/nutritional_data.txt')
-        logger.info(f"Parsed {len(food_items)} food items from the text file.")
+        if not os.path.exists(TXT_FILE_PATH):
+            logger.error(f"File not found: {TXT_FILE_PATH}")
+            food_items = []
+        else:
+            food_items = parse_food_items(TXT_FILE_PATH)
+            logger.info(f"Parsed {len(food_items)} food items from the text file.")
 
         # Process each food item
         for food_item in food_items:

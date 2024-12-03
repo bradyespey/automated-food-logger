@@ -26,18 +26,26 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure logging
-log_file_path = "/Users/bradyespey/Projects/GitHub/LoseIt/logs/test_water_logging.log"
+# Set up directories
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)  # Ensure logs directory exists
 
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(log_file_path)  # Log to the desired file
+        logging.FileHandler(os.path.join(LOG_DIR, "test_water_logging.log"))  # Log file in LOG_DIR
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Dynamically construct path to nutritional data file
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+TXT_FILE_PATH = os.path.join(BASE_DIR, "txt", "nutritional_data.txt")
+logger.info(f"Using nutritional data file path: {TXT_FILE_PATH}")
 
 # Retrieve credentials and settings from environment variables
 LOSEIT_EMAIL = os.getenv('LOSEIT_EMAIL')
@@ -162,7 +170,7 @@ def verify_login(driver):
         return True
     except TimeoutException:
         logger.error("Login may have failed; current date not found on home page.")
-        driver.save_screenshot("verify_login_timeout.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, "verify_login_timeout.png"))
         return False
     except Exception as e:
         logger.error(f"An error occurred while verifying login: {e}", exc_info=True)
@@ -225,6 +233,7 @@ def navigate_to_water_goals_page(driver):
         logger.info("Navigated to water intake page.")
     except Exception as e:
         logger.error(f"Failed to navigate to water intake page: {e}", exc_info=True)
+        driver.save_screenshot(os.path.join(LOG_DIR, "navigate_to_water_goals_page_error.png"))
 
 def get_current_water_date(driver):
     """
@@ -242,7 +251,7 @@ def get_current_water_date(driver):
         return current_date
     except Exception as e:
         logger.error(f"An error occurred while retrieving current date on water intake page: {e}", exc_info=True)
-        return None
+        driver.save_screenshot(os.path.join(LOG_DIR, "get_current_water_date_error.png"))
 
 def navigate_water_day(driver, days):
     """
@@ -262,6 +271,7 @@ def navigate_water_day(driver, days):
             time.sleep(1)  # Wait for the date to update
     except TimeoutException:
         logger.error("Previous Day button not found or not clickable.")
+        driver.save_screenshot(os.path.join(LOG_DIR, "navigate_water_day_timeout.png"))
     except Exception as e:
         logger.error(f"An error occurred while navigating back days: {e}", exc_info=True)
 
@@ -283,7 +293,7 @@ def get_current_water_intake(driver):
         return current_water
     except Exception as e:
         logger.error(f"Failed to read current water intake from input box: {e}", exc_info=True)
-        return None
+        driver.save_screenshot(os.path.join(LOG_DIR, "get_current_water_intake_error.png"))
 
 def set_water_intake(driver, water_oz):
     """
@@ -317,8 +327,10 @@ def set_water_intake(driver, water_oz):
         # Do not attempt to verify the intake after Record to avoid discrepancies
     except TimeoutException:
         logger.error("Water intake input box or Record button not found or not clickable.")
+        driver.save_screenshot(os.path.join(LOG_DIR, "set_water_intake_timeout.png"))
     except Exception as e:
         logger.error(f"Failed to set water intake: {e}", exc_info=True)
+        driver.save_screenshot(os.path.join(LOG_DIR, "set_water_intake_error.png"))
 
 def navigate_to_main_page(driver):
     """
@@ -359,7 +371,7 @@ def update_water_intake(driver, food_item, days_difference):
             current_water_date = get_current_water_date(driver)
             if not current_water_date:
                 logger.error("Could not retrieve current water date. Skipping update.")
-                return
+                driver.save_screenshot(os.path.join(LOG_DIR, "update_water_intake_date_error.png"))
 
             if current_water_date != target_date:
                 # Navigate back to the target date if necessary
@@ -374,7 +386,7 @@ def update_water_intake(driver, food_item, days_difference):
                 current_water_date = get_current_water_date(driver)
                 if current_water_date != target_date:
                     logger.error(f"Failed to navigate to the correct date. Expected: {target_date}, Found: {current_water_date}")
-                    return
+                    driver.save_screenshot(os.path.join(LOG_DIR, "update_water_intake_navigation_error.png"))
                 else:
                     logger.info(f"Verified target date: {current_water_date}")
             else:
@@ -423,8 +435,13 @@ def main():
             return
 
         # Step 3: Read food items from the text file
-        food_items = parse_food_items('/Users/bradyespey/Projects/GitHub/LoseIt/txt/nutritional_data.txt')
-        logger.info(f"Parsed {len(food_items)} food items from the text file.")
+        if not os.path.exists(TXT_FILE_PATH):
+            logger.error(f"File not found: {TXT_FILE_PATH}")
+            food_items = []
+        else:
+            logger.info(f"Using nutritional data file: {TXT_FILE_PATH}")
+            food_items = parse_food_items(TXT_FILE_PATH)
+            logger.info(f"Parsed {len(food_items)} food items from the text file.")
 
         # Step 4: Process each food item
         for food_item in food_items:
