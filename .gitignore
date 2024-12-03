@@ -117,3 +117,7 @@ cython_debug/
 # Sensitive files
 loseit_cookies.json
 api_credentials.json
+
+# Logs
+log/
+logs/

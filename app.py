@@ -1,14 +1,21 @@
 # app.py
 
 import os
+import secrets
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
 from werkzeug.middleware.proxy_fix import ProxyFix
 import logging
+from dotenv import load_dotenv
 
 # Import the Celery task
 from scripts.celery_worker import run_import_foods  # Import the Celery task
+
+from celery.result import AsyncResult  # Import AsyncResult to check task status
+
+# Load environment variables
+load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='static', template_folder='templates')
@@ -31,8 +38,8 @@ logger = logging.getLogger(__name__)
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
-    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
-    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
+    client_id=os.environ.get('CLIENT_ID'),
+    client_secret=os.environ.get('CLIENT_SECRET'),
     access_token_url='https://oauth2.googleapis.com/token',
     authorize_url='https://accounts.google.com/o/oauth2/auth',
     authorize_params=None,
@@ -64,15 +71,18 @@ def home():
 def login():
     # Initiate OAuth flow
     redirect_uri = url_for('authorize', _external=True)
+    nonce = secrets.token_urlsafe(16)  # Generate a secure nonce
+    session['nonce'] = nonce  # Store nonce in session for later verification
     logger.info("Initiating OAuth flow.")
-    return google.authorize_redirect(redirect_uri)
+    return google.authorize_redirect(redirect_uri, nonce=nonce)
 
 @app.route('/foodlog/oauth2callback')
 def authorize():
     # Handle OAuth callback
     try:
         token = google.authorize_access_token()
-        user_info = google.parse_id_token(token)
+        nonce = session.get('nonce')  # Retrieve the stored nonce
+        user_info = google.parse_id_token(token, nonce=nonce)  # Pass nonce for verification
         session['user'] = user_info
         logger.info(f"User authenticated: {user_info}")
         return redirect(url_for('foodlog'))
@@ -107,7 +117,8 @@ def submit_log():
             # Enqueue the Celery task
             task = run_import_foods.delay(log_text)
             logger.info(f"Task {task.id} enqueued.")
-            return jsonify(output="Your food log is being processed."), 202
+            # Return the task ID to the client
+            return jsonify(task_id=task.id), 202
         except Exception as e:
             logger.error(f"Task enqueue failed: {e}")
             return jsonify(output=f"Task enqueue failed: {e}"), 500
@@ -115,7 +126,34 @@ def submit_log():
         logger.error("No log text provided.")
         return jsonify(output="No log text provided."), 400
 
+@app.route('/foodlog/task-status/<task_id>', methods=['GET'])
+@requires_auth
+def task_status(task_id):
+    task = AsyncResult(task_id)
+    if task.state == 'PENDING':
+        response = {
+            'state': task.state,
+            'status': 'Pending...'
+        }
+    elif task.state == 'SUCCESS':
+        response = {
+            'state': task.state,
+            'result': task.result  # This is the output from your task
+        }
+    elif task.state == 'FAILURE':
+        response = {
+            'state': task.state,
+            'status': str(task.info)  # Exception information
+        }
+    else:
+        # Other states: STARTED, RETRY
+        response = {
+            'state': task.state,
+            'status': str(task.info)  # Can be used to store progress information
+        }
+    return jsonify(response)
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))
+    port = int(os.getenv('PORT', 5001))
     logger.info(f"Starting Flask app in {env} mode on port {port}.")
     app.run(host='0.0.0.0', port=port, debug=(env == 'dev'))

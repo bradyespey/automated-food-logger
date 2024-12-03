@@ -1,4 +1,4 @@
-# temp.py
+# test_food_logging.py
 
 import os
 import time
@@ -33,7 +33,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("tempy.log")  # Log to a file for persistent records
+        logging.FileHandler("../../logs/test_food_logging.log")  # Log to a file for persistent records
     ]
 )
 logger = logging.getLogger(__name__)
@@ -606,7 +606,7 @@ def main():
             return
 
         # Read food items from the text file
-        food_items = parse_food_items('nutritional_data.txt')
+        food_items = parse_food_items('../../txt/nutritional_data.txt')
         logger.info(f"Parsed {len(food_items)} food items from the text file.")
 
         # Process each food item

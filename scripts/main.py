@@ -1,245 +1,198 @@
-# scripts/main.py
+# main.py
 
 import os
-import time
 import logging
-from datetime import datetime
-import subprocess
-from webdriver_manager.chrome import ChromeDriverManager
+from datetime import date, datetime
+from dotenv import load_dotenv
 
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options
+# Load environment variables
+load_dotenv()
 
-# Import modular functions
-from scripts.login import check_logged_in, login_using_credentials
-from scripts.navigation import navigate_day
-from scripts.food_entry import click_create_custom_food, enter_food_details
-from scripts.water_intake import update_water_intake, navigate_to_water_goals_page, navigate_water_day, get_current_water_intake, set_water_intake
-from scripts.utils import parse_nutritional_data, compare_items
+LOSEIT_EMAIL = os.getenv('LOSEIT_EMAIL')
+LOSEIT_PASSWORD = os.getenv('LOSEIT_PASSWORD')
+HEADLESS_MODE = os.getenv('HEADLESS_MODE', 'False').lower() == 'true'
+
+from scripts.login import initialize_driver, login, verify_login
+from scripts.navigation import (
+    parse_food_item_date,
+    navigate_to_date,
+    close_overlays,
+    select_search_box,
+    enter_placeholder_text,
+    click_create_custom_food
+)
+from scripts.food_entry import enter_food_details, save_food
+from scripts.water_intake import update_water_intake
+from scripts.utils import parse_food_items, compare_items
+from scripts.fetch_logged_items import fetch_logged_items
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)  # Set to DEBUG for detailed logs
+logging.basicConfig(
+    level=logging.INFO,  # Set to DEBUG for more detailed logs
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("tempy.log")
+    ]
+)
 logger = logging.getLogger(__name__)
 
-def kill_chrome_driver():
+def main(log_text):
     """
-    Kills any lingering Chrome or ChromeDriver processes.
+    Main function to process food log input, log food items into Lose It!,
+    and generate a comparison report.
     """
-    try:
-        if os.name == 'nt':
-            subprocess.call("taskkill /f /im chromedriver.exe >nul 2>&1", shell=True)
-            subprocess.call("taskkill /f /im chrome.exe >nul 2>&1", shell=True)
-        else:
-            subprocess.call("pkill chromedriver", shell=True)
-            subprocess.call("pkill chrome", shell=True)
-        logger.debug("Killed existing Chrome and ChromeDriver processes.")
-    except Exception as e:
-        logger.warning(f"Failed to kill Chrome/ChromeDriver processes: {e}")
+    logger.info("Script started.")
+    driver = initialize_driver(headless=HEADLESS_MODE)
 
-def initialize_driver():
-    """
-    Initializes the Chrome WebDriver with specified options using webdriver-manager.
-    """
-    kill_chrome_driver()  # Ensure no previous instances are running
-
-    # Set Chrome options
-    options = Options()
-
-    # Run in headless mode based on environment variable
-    headless_mode = os.getenv('HEADLESS_MODE', 'True') == 'True'
-    if headless_mode:
-        options.add_argument("--headless=new")  # Use "--headless=new" for newer Chrome versions
-        options.add_argument("--disable-gpu")
-        logger.debug("Running in headless mode.")
-    else:
-        options.add_argument("--start-maximized")  # For visual debugging
-        logger.debug("Running in non-headless mode.")
-
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920x1080")
-    options.add_argument("--disable-extensions")
-    options.add_argument("--remote-debugging-port=9222")
-    options.add_argument("--disable-logging")
-    options.add_argument("--log-level=3")
-
-    # Initialize Chrome WebDriver using webdriver-manager
-    try:
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-        logger.info("Chrome WebDriver initialized.")
-        return driver
-    except WebDriverException as e:
-        logger.error(f"Failed to initialize Chrome WebDriver: {e}")
-        raise e
-
-def initialize_driver_with_retry(retries=3):
-    """
-    Attempts to initialize the driver, retrying in case of failure.
-    """
-    for attempt in range(retries):
-        try:
-            logger.info(f"Attempting to initialize WebDriver (Attempt {attempt + 1})...")
-            return initialize_driver()
-        except WebDriverException as e:
-            logger.warning(f"WebDriver initialization failed on attempt {attempt + 1}: {e}")
-            if attempt < retries - 1:
-                logger.info("Retrying to initialize driver...")
-                time.sleep(2)  # Wait before retrying
-            else:
-                logger.error(f"Failed to initialize WebDriver after {retries} attempts.")
-                raise e
-
-def visit_homepage(driver):
-    """
-    Navigates to the Lose It! homepage.
-    """
-    try:
-        homepage_url = "https://www.loseit.com/"
-        driver.get(homepage_url)
-        logger.info("Visited homepage.")
-        time.sleep(3)
-    except Exception as e:
-        logger.error(f"Failed to visit the homepage: {e}")
-
-def main():
-    start_time = time.time()
-
-    log_text = os.getenv('LOG_TEXT', '')
-    if not log_text:
-        logger.error("No LOG_TEXT provided.")
-        return
-
-    driver = None
-    logging_output = "<b style='color: #f9c74f;'>Logging Output:</b><br>"
-
-    total_input_fluid_ounces = 0.0
-    total_logged_fluid_ounces = 0.0
+    output_messages = []  # Collect output messages to return
+    start_time = datetime.now()
 
     try:
-        logger.info("Initializing WebDriver...")
-        driver = initialize_driver_with_retry()
-        logger.info("WebDriver initialized.")
+        # Step 1: Log in
+        if not login(driver, LOSEIT_EMAIL, LOSEIT_PASSWORD):
+            logger.error("Login failed. Exiting script.")
+            output_messages.append("<span style='color: red;'>Login failed.</span>")
+            return "<br>".join(output_messages)
 
-        logger.info("Navigating to Lose It! homepage...")
-        visit_homepage(driver)
+        # Step 2: Verify login
+        if not verify_login(driver):
+            logger.error("Login verification failed. Exiting script.")
+            output_messages.append("<span style='color: red;'>Login verification failed.</span>")
+            return "<br>".join(output_messages)
 
-        logger.info("Checking login status...")
-        if not check_logged_in(driver):
-            logger.info("User not logged in. Attempting to log in...")
-            if not login_using_credentials(driver):
-                logger.error("Failed to log in using credentials.")
-                return
-        else:
-            logger.info("User is already logged in.")
+        # Parse food items from the log text
+        food_items = parse_food_items(log_text)
+        num_items = len(food_items)
+        logger.info(f"Parsed {num_items} food items from the input.")
 
-        logger.info("Navigated to Lose It! homepage after logging in.")
+        if not food_items:
+            logger.info("No food items to process.")
+            output_messages.append("No food items to process.")
+            return "<br>".join(output_messages)
 
-        food_items = parse_nutritional_data(log_text)
-        logged_items = []
+        # Collect dates processed
+        processed_dates = set()
+        total_fluid_ounces_input = 0.0
 
-        for index, food_details in enumerate(food_items):
-            current_date = datetime.now().strftime("%m/%d/%Y")
-            food_date = food_details.get("date", current_date)
-            try:
-                food_date_obj = datetime.strptime(food_date, "%m/%d/%Y")
-            except ValueError:
-                # If year is missing, append current year
-                try:
-                    food_date_obj = datetime.strptime(f"{food_date}/{datetime.now().year}", "%m/%d/%Y")
-                except ValueError as ve:
-                    logger.error(f"Invalid date format for '{food_date}': {ve}")
-                    continue
-            current_date_obj = datetime.strptime(current_date, "%m/%d/%Y")
-            days_difference = (food_date_obj - current_date_obj).days
-            if days_difference != 0:
-                navigate_day(driver, days=days_difference)
+        # Initialize water intake tracking
+        water_intake_history = {}
 
-            meal = food_details.get("meal", "dinner").lower()
-            # Updated to use meal name instead of tabindex
-            enter_placeholder_text_in_search_box(driver, meal)
+        # Process each food item
+        for idx, food_item in enumerate(food_items, 1):
+            # Log the food_item structure for debugging
+            logger.debug(f"Processing food item: {food_item}")
 
-            if not click_create_custom_food(driver):
-                logger.warning(f"Failed to find 'Create a custom food' button for '{food_details['name']}'. Skipping to next.")
+            # Logging output
+            output_messages.append(f"<b style='color: #f9c74f;'>Logging item {idx} of {num_items}: {food_item.get('Food Name', 'Unknown')}</b>")
+
+            # Parse the date
+            date_str = food_item.get("Date")
+            if not date_str:
+                logger.error("Date is missing for a food item. Skipping.")
+                output_messages.append("<span style='color: red;'>Date is missing for a food item. Skipping.</span>")
+                continue
+            target_date = parse_food_item_date(date_str)
+            if not target_date:
+                logger.error(f"Invalid date format for food item: {date_str}. Skipping.")
+                output_messages.append(f"<span style='color: red;'>Invalid date format for food item: {date_str}. Skipping.</span>")
                 continue
 
-            # Log food details
-            enter_food_details(driver, food_details)
+            # Navigate to the target date
+            if not navigate_to_date(driver, target_date):
+                logger.error(f"Failed to navigate to date {target_date}. Skipping food item.")
+                output_messages.append(f"<span style='color: red;'>Failed to navigate to date {target_date}. Skipping food item.</span>")
+                continue
 
-            logged_items.append(food_details)
-            logging_output += f"Logging item {index + 1} of {len(food_items)}: {food_details['name']}<br>"
+            # Get the meal name
+            meal_name = food_item.get("Meal", "Dinner")
+            # Select the search box for the meal
+            search_input = select_search_box(driver, meal_name)
+            if not search_input:
+                logger.error(f"Failed to locate '{meal_name}' search box. Skipping food item.")
+                output_messages.append(f"<span style='color: red;'>Failed to locate '{meal_name}' search box. Skipping food item.</span>")
+                continue
 
-            # Update water intake and get fluid ounces added
-            water_log_message, fluid_oz_added = update_water_intake(
-                driver, food_details, days_difference,
-                navigate_to_water_goals_page, navigate_water_day, get_current_water_intake, set_water_intake
-            )
-            if water_log_message:
-                logging_output += f"{water_log_message}<br>"
+            # Enter placeholder text to trigger 'Create a custom food' button
+            placeholder_text = "t3stf00dd03sn0t3xist"
+            if not enter_placeholder_text(driver, search_input, placeholder_text):
+                logger.error("Failed to enter placeholder text. Skipping food item.")
+                output_messages.append("<span style='color: red;'>Failed to enter placeholder text. Skipping food item.</span>")
+                continue
+
+            # Click the 'Create a custom food' button
+            if not click_create_custom_food(driver):
+                logger.error("Failed to click 'Create a custom food' button. Skipping food item.")
+                output_messages.append("<span style='color: red;'>Failed to click 'Create a custom food' button. Skipping food item.</span>")
+                continue
+
+            # Enter food details
+            if not enter_food_details(driver, food_item):
+                logger.error("Failed to enter food details. Skipping food item.")
+                output_messages.append("<span style='color: red;'>Failed to enter food details. Skipping food item.</span>")
+                continue
+
+            # Save the food
+            if not save_food(driver):
+                logger.error("Failed to save the food. Skipping food item.")
+                output_messages.append("<span style='color: red;'>Failed to save the food. Skipping food item.</span>")
+                continue
+
+            # Close any overlays or popups after saving
+            close_overlays(driver)
+
+            # Update water intake if applicable
+            serving_size = food_item.get("Serving Size", "").lower()
+            if "fluid ounce" in serving_size:
+                try:
+                    # Calculate days_difference based on target_date
+                    days_difference_calculation = (target_date - date.today()).days
+                    previous_water_intake = water_intake_history.get(target_date, 0.0)
+                    new_water_intake = update_water_intake(driver, food_item, days_difference_calculation)
+                    if new_water_intake is not None:
+                        water_intake_history[target_date] = new_water_intake
+                        output_messages.append(f"Updated the water intake on {target_date.strftime('%m/%d/%Y')} from {previous_water_intake} oz to {new_water_intake} oz")
+                    else:
+                        output_messages.append(f"<span style='color: red;'>Failed to update water intake for {food_item.get('Food Name', 'Unknown')}</span>")
+                except Exception as e:
+                    logger.error(f"Error updating water intake: {e}")
+                    output_messages.append(f"<span style='color: red;'>Error updating water intake: {e}</span>")
             else:
-                fluid_oz_added = 0.0
+                logger.info(f"No fluid ounces found for: {food_item.get('Food Name', 'Unknown')}. Skipping water intake.")
 
-            # Store the fluid ounces added into food_details
-            food_details['fluid_ounces_added'] = fluid_oz_added
+            output_messages.append("Logged nutritional values")
+            logger.info(f"Successfully logged food item: {food_item.get('Food Name', 'Unknown')}")
 
-            # Accumulate totals
-            total_input_fluid_ounces += food_details.get('fluid_ounces', 0.0)
-            total_logged_fluid_ounces += fluid_oz_added
+            # Keep track of processed dates
+            processed_dates.add(target_date)
 
-            # Refresh the page to reset for the next item
-            driver.refresh()
-            visit_homepage(driver)
+        # Fetch logged items for comparison
+        logged_items = []
+        for proc_date in processed_dates:
+            items = fetch_logged_items(driver, proc_date)
+            logged_items.extend(items)
+
+        # Perform comparison
+        comparison_output = compare_items(food_items, logged_items)
+        output_messages.append(f"<br><b style='color: #f9c74f;'>Comparison Check:</b><br>{comparison_output}")
+
+        end_time = datetime.now()
+        time_taken = (end_time - start_time).total_seconds()
+        output_messages.append(f"<br>Time to Log: {time_taken:.2f} seconds")
+
+        logger.info("All food items processed successfully.")
+        return "<br>".join(output_messages)
 
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
+        logger.error(f"An unexpected error occurred: {e}", exc_info=True)
+        return f"An unexpected error occurred: {e}"
 
     finally:
-        if driver:
-            driver.quit()
-            logger.info("WebDriver closed.")
-
-    logging_output += f"Time to Log: {time.time() - start_time:.2f} seconds<br><br>"
-    comparison = compare_items(food_items, logged_items, log_text, total_input_fluid_ounces, total_logged_fluid_ounces)
-    logger.info(logging_output + comparison)
-    print(logging_output + comparison)  # Ensure the output is sent to stdout
-
-def convert_fraction_to_float(fraction_str):
-    """
-    Converts a fraction string to a float.
-    """
-    if '/' in fraction_str:
-        numerator, denominator = fraction_str.split('/')
-        return float(numerator) / float(denominator)
-    else:
-        try:
-            return float(fraction_str)
-        except ValueError:
-            logger.warning(f"Cannot convert fraction string to float: {fraction_str}")
-            return 0.0
-
-def enter_placeholder_text_in_search_box(driver, meal):
-    """
-    Enters placeholder text in the search box based on the meal.
-    """
-    try:
-        # Locate the meal section by its header
-        meal_section = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, f"//h2[contains(text(), '{meal.capitalize()}')]"))
-        )
-        # Then find the search box within that section
-        search_box = meal_section.find_element(By.XPATH, ".//input[@placeholder='Search foods']")
-        search_box.clear()
-        search_box.click()
-        search_box.send_keys("t3stf00dd03sn0t3xist")
-        search_box.send_keys(Keys.ENTER)
-        logger.info(f"Entered placeholder text in search box for meal '{meal}'.")
-    except Exception as e:
-        logger.error(f"Failed to enter text in search box: {e}")
+        driver.quit()
+        logger.info("WebDriver closed.")
 
 if __name__ == "__main__":
-    main()
+    # For testing purposes
+    log_text = """Your sample food log text here."""
+    output = main(log_text)
+    print(output)

@@ -1,202 +1,269 @@
 # scripts/food_entry.py
-# Contains functions for entering food details.
 
 import logging
-import time
+from fractions import Fraction
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementNotInteractableException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 
 logger = logging.getLogger(__name__)
 
-def wait_for_create_custom_food_button(driver):
+def parse_serving_amount(serving_amount_str):
     """
-    Waits for the 'Create a custom food' button to be clickable.
+    Parses the serving amount string and returns whole number and fraction.
+
+    Args:
+        serving_amount_str (str): The serving amount string (e.g., "3 1/2").
+
+    Returns:
+        tuple: (whole_part (int), fraction_part (Fraction))
     """
     try:
-        create_food_button = WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable((By.XPATH, "//div[contains(text(), 'Create a custom food')]"))
-        )
-        return create_food_button
+        # Remove any parentheses or additional text
+        serving_amount_str = serving_amount_str.strip()
+        if '(' in serving_amount_str:
+            serving_amount_str = serving_amount_str.split('(')[0].strip()
+        
+        # Check if the amount is a mixed number (e.g., "3 1/2")
+        if ' ' in serving_amount_str:
+            whole_part_str, fraction_part_str = serving_amount_str.split(' ', 1)
+            whole_part = int(whole_part_str)
+            fraction_part = Fraction(fraction_part_str)
+        elif '/' in serving_amount_str:
+            # It's a fraction like '1/2'
+            fraction_part = Fraction(serving_amount_str)
+            whole_part = 0
+        else:
+            # Parse as decimal
+            amount_float = float(serving_amount_str)
+            whole_part = int(amount_float)
+            fractional_value = amount_float - whole_part
+            if fractional_value > 0:
+                fraction_part = Fraction(fractional_value).limit_denominator(8)
+            else:
+                fraction_part = Fraction(0)
+        return whole_part, fraction_part
     except Exception as e:
-        logger.error(f"Failed to locate 'Create a custom food' button: {e}")
-        return None
+        logger.error(f"Error parsing serving amount '{serving_amount_str}': {e}", exc_info=True)
+        return None, None
 
-def click_create_custom_food(driver):
+def round_fraction_to_nearest_common(fraction):
     """
-    Clicks the 'Create a custom food' button.
-    """
-    create_food_button = wait_for_create_custom_food_button(driver)
-    if create_food_button:
-        try:
-            driver.execute_script("arguments[0].scrollIntoView(true);", create_food_button)
-            create_food_button.click()
-            logger.info("Clicked 'Create a custom food' button.")
-            time.sleep(2)  # Wait for the custom food form to appear
-            return True
-        except Exception as e:
-            logger.error(f"Failed to click 'Create a custom food' button: {e}")
-    return False
+    Rounds a fraction to the nearest common fraction from the provided list.
 
-def handle_fractional_serving(actions, serving_fraction):
+    Args:
+        fraction (Fraction): The fraction to round.
+
+    Returns:
+        str: The nearest common fraction as a string.
     """
-    Handles fractional servings by sending the appropriate number of UP key presses.
-    """
-    fraction_map = {
-        0.125: 1, 0.25: 2, 0.333: 3, 0.5: 4,
-        0.666: 5, 0.75: 6, 0.875: 7
+    common_fractions = {
+        Fraction(1, 8): '1/8',
+        Fraction(1, 4): '1/4',
+        Fraction(1, 3): '1/3',
+        Fraction(1, 2): '1/2',
+        Fraction(2, 3): '2/3',
+        Fraction(3, 4): '3/4',
+        Fraction(7, 8): '7/8',
     }
-    closest_fraction = min(fraction_map.keys(), key=lambda x: abs(x - serving_fraction))
-    steps = fraction_map[closest_fraction]
-    for _ in range(steps):
-        actions.send_keys(Keys.UP).perform()
-    logger.debug(f"Handled fractional serving: {serving_fraction} as {closest_fraction} with {steps} steps.")
+    min_diff = None
+    nearest_fraction = None
+    for cf, cf_str in common_fractions.items():
+        diff = abs(fraction - cf)
+        if min_diff is None or diff < min_diff:
+            min_diff = diff
+            nearest_fraction = cf_str
+    logger.debug(f"Rounded fraction {fraction} to nearest common fraction: {nearest_fraction}")
+    return nearest_fraction
 
-def convert_fraction_to_float(fraction_str):
+def handle_fractional_serving(actions, fraction_str):
     """
-    Converts a fraction string (e.g., '1/2') to a float.
+    Handles entering fractional serving sizes using up arrow keys.
+
+    Args:
+        actions (ActionChains): The Selenium ActionChains instance.
+        fraction_str (str): The fractional serving string (e.g., "1/2").
     """
-    numerator, denominator = map(int, fraction_str.split('/'))
-    return numerator / denominator
+    try:
+        fraction_to_up_arrows = {
+            '1/8': 1,
+            '1/4': 2,
+            '1/3': 3,
+            '1/2': 4,
+            '2/3': 5,
+            '3/4': 6,
+            '7/8': 7
+        }
+        up_arrow_presses = fraction_to_up_arrows.get(fraction_str)
+        if up_arrow_presses:
+            for _ in range(up_arrow_presses):
+                actions.send_keys(Keys.ARROW_UP).perform()
+            logger.debug(f"Selected fractional serving: {fraction_str}")
+        else:
+            logger.warning(f"Unhandled serving fraction: {fraction_str}")
+        actions.send_keys(Keys.TAB).perform()
+    except Exception as e:
+        logger.error(f"An error occurred while handling fractional serving: {e}", exc_info=True)
+        actions.send_keys(Keys.TAB).perform()
 
 def enter_food_details(driver, food_item):
     """
-    Enters the details of a food item into the logging form.
+    Enters the food details into the custom food form.
+
+    Args:
+        driver (WebDriver): The Selenium WebDriver instance.
+        food_item (dict): Dictionary containing food item details.
+
+    Returns:
+        bool: True if successful, False otherwise.
     """
     try:
-        time.sleep(2)  # Ensure the form is loaded
-
+        # Wait for the form to load and locate the brand input
+        brand_input_xpath = "//input[@tabindex='1004']"
+        brand_input = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, brand_input_xpath))
+        )
         actions = ActionChains(driver)
 
-        # Locate the Brand input field by its tabindex=1004
-        brand_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@tabindex='1004']"))
-        )
-        brand_input.click()
-        actions.send_keys(food_item.get("brand", "")).perform()
+        # Brand
+        brand = food_item.get("Brand", "")
+        if brand:
+            actions.click(brand_input).send_keys(brand).perform()
+            logger.debug(f"Entered brand: {brand}")
+        else:
+            logger.debug("No brand provided; skipping brand entry.")
         actions.send_keys(Keys.TAB).perform()
 
-        # Enter Food Name
-        food_name_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Food Name']"))
-        )
-        food_name_input.send_keys(food_item.get("name", ""))
+        # Food Name
+        food_name = food_item.get("Food Name", "")
+        if food_name:
+            actions.send_keys(food_name).perform()
+            logger.debug(f"Entered food name: {food_name}")
+        else:
+            logger.warning("No food name provided; skipping food name entry.")
         actions.send_keys(Keys.TAB).perform()
 
-        # Enter Icon (assuming the first word of the icon text is used)
-        icon_text = food_item.get("icon", "").split()[0]
-        icon_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Icon']"))
-        )
-        icon_input.send_keys(icon_text)
+        # Icon (if applicable)
+        icon = food_item.get("Icon", "")
+        if icon:
+            icon_first_word = icon.split()[0]
+            actions.send_keys(icon_first_word).perform()
+            logger.debug(f"Entered icon first word: {icon_first_word}")
         actions.send_keys(Keys.TAB).perform()
 
         # Serving Quantity
-        serving_quantity = food_item.get("serving_quantity", "0 servings")
-        serving_amount, serving_type = serving_quantity.split(" ", 1) if " " in serving_quantity else (serving_quantity, "servings")
+        serving_size = food_item.get("Serving Size", "")
+        if serving_size:
+            try:
+                # Split the serving size into amount and type
+                serving_amount_str, serving_type = serving_size.split(" ", 1)
+                serving_amount_str = serving_amount_str.strip()
+                serving_type = serving_type.strip()
 
-        if '/' in serving_amount:
-            whole_part = 0
-            serving_fraction = convert_fraction_to_float(serving_amount)
+                # Parse serving amount
+                whole_part, fraction_part = parse_serving_amount(serving_amount_str)
+                if whole_part is None:
+                    raise ValueError(f"Unable to parse serving amount '{serving_amount_str}'")
+
+                logger.debug(f"Parsed serving amount: whole_part={whole_part}, fraction_part={fraction_part}")
+
+                # Enter whole part
+                actions.send_keys(str(whole_part)).perform()
+                actions.send_keys(Keys.TAB).perform()
+
+                # Handle fractional serving
+                if fraction_part > 0:
+                    # Round to nearest common fraction
+                    fraction_str = round_fraction_to_nearest_common(fraction_part)
+                    if fraction_str:
+                        handle_fractional_serving(actions, fraction_str)
+                    else:
+                        # If no matching common fraction, skip fractional part
+                        logger.warning(f"No matching common fraction for {fraction_part}; skipping fractional serving.")
+                        actions.send_keys(Keys.TAB).perform()
+                else:
+                    # No fractional part
+                    actions.send_keys(Keys.TAB).perform()
+
+                # Serving Type
+                serving_type_first_word = serving_type.split()[0]
+                actions.send_keys(serving_type_first_word).perform()
+                logger.debug(f"Entered serving type: {serving_type_first_word}")
+                actions.send_keys(Keys.TAB).perform()
+            except ValueError as ve:
+                logger.error(f"ValueError while parsing serving size '{serving_size}': {ve}", exc_info=True)
+                # Skip serving size inputs if parsing fails
+                for _ in range(3):
+                    actions.send_keys(Keys.TAB).perform()
+            except Exception as e:
+                logger.error(f"Unexpected error while parsing serving size '{serving_size}': {e}", exc_info=True)
+                # Skip serving size inputs if parsing fails
+                for _ in range(3):
+                    actions.send_keys(Keys.TAB).perform()
         else:
-            parts = serving_amount.split('.')
-            if len(parts) == 2:
-                whole_part = int(parts[0])
-                serving_fraction = float('0.' + parts[1])
+            # Skip serving size inputs if not provided
+            logger.debug("No serving size provided; skipping serving size entry.")
+            for _ in range(3):
+                actions.send_keys(Keys.TAB).perform()
+
+        # Nutritional Information
+        nutrition_fields = [
+            ("Calories", "Calories"),
+            ("Fat (g)", "Fat"),
+            ("Saturated Fat (g)", "Saturated Fat"),
+            ("Cholesterol (mg)", "Cholesterol"),
+            ("Sodium (mg)", "Sodium"),
+            ("Carbs (g)", "Carbohydrates"),
+            ("Fiber (g)", "Fiber"),
+            ("Sugar (g)", "Sugars"),
+            ("Protein (g)", "Protein"),
+        ]
+
+        for field_key, field_name in nutrition_fields:
+            value = food_item.get(field_key, "")
+            if value:
+                actions.send_keys(str(value)).perform()
+                logger.debug(f"Entered {field_name}: {value}")
             else:
-                whole_part = int(serving_amount)
-                serving_fraction = 0.0
+                logger.debug(f"No value provided for {field_name}; skipping entry.")
+            actions.send_keys(Keys.TAB).perform()
 
-        # Enter whole part
-        whole_part_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Serving Size']"))
-        )
-        whole_part_input.send_keys(str(whole_part))
-        actions.send_keys(Keys.TAB).perform()
+        logger.debug("Entered food details successfully.")
+        return True
+    except (TimeoutException, NoSuchElementException, ElementNotInteractableException) as e:
+        logger.error(f"Exception during entering food details: {e}", exc_info=True)
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error during entering food details: {e}", exc_info=True)
+        return False
 
-        # Handle fractional serving if any
-        if serving_fraction > 0:
-            handle_fractional_serving(actions, serving_fraction)
-        actions.send_keys(Keys.TAB).perform()
+def save_food(driver):
+    """
+    Clicks the 'Add Food' button to save the custom food.
 
-        # Enter serving type
-        serving_type_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Serving Type']"))
-        )
-        serving_type_input.send_keys(serving_type.split()[0])  # Assuming first word
-        actions.send_keys(Keys.TAB).perform()
+    Args:
+        driver (WebDriver): The Selenium WebDriver instance.
 
-        # Enter Calories
-        calories_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Calories']"))
-        )
-        calories_input.send_keys(food_item.get("calories", ""))
-        actions.send_keys(Keys.TAB).perform()
-
-        # Enter Fat
-        fat_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Fat (g)']"))
-        )
-        fat_input.send_keys(food_item.get("fat", ""))
-        actions.send_keys(Keys.TAB).perform()
-
-        # Enter Saturated Fat
-        saturated_fat_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Saturated Fat (g)']"))
-        )
-        saturated_fat_input.send_keys(food_item.get("saturated_fat", ""))
-        actions.send_keys(Keys.TAB).perform()
-
-        # Enter Cholesterol
-        cholesterol_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Cholesterol (mg)']"))
-        )
-        cholesterol_input.send_keys(food_item.get("cholesterol", ""))
-        actions.send_keys(Keys.TAB).perform()
-
-        # Enter Sodium
-        sodium_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Sodium (mg)']"))
-        )
-        sodium_input.send_keys(food_item.get("sodium", ""))
-        actions.send_keys(Keys.TAB).perform()
-
-        # Enter Carbs
-        carbs_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Carbs (g)']"))
-        )
-        carbs_input.send_keys(food_item.get("carbs", ""))
-        actions.send_keys(Keys.TAB).perform()
-
-        # Enter Fiber
-        fiber_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Fiber (g)']"))
-        )
-        fiber_input.send_keys(food_item.get("fiber", ""))
-        actions.send_keys(Keys.TAB).perform()
-
-        # Enter Sugar
-        sugar_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Sugar (g)']"))
-        )
-        sugar_input.send_keys(food_item.get("sugar", ""))
-        actions.send_keys(Keys.TAB).perform()
-
-        # Enter Protein
-        protein_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Protein (g)']"))
-        )
-        protein_input.send_keys(food_item.get("protein", ""))
-        actions.send_keys(Keys.TAB).perform()
-
-        # Click the Save/Add Food button
+    Returns:
+        bool: True if the button was clicked successfully, False otherwise.
+    """
+    try:
+        # Locate the 'Add Food' button
+        add_food_button_xpath = "//div[@tabindex='1020' and contains(@class, 'addFoodToLog')]"
         add_food_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'addFoodToLog')]"))
+            EC.element_to_be_clickable((By.XPATH, add_food_button_xpath))
         )
         add_food_button.click()
-        logger.info(f"Entered food details for '{food_item.get('name', '')}'.")
-        time.sleep(2)  # Wait for the food to be added
+        logger.debug("Clicked 'Add Food' button to save the custom food.")
+        return True
+    except (TimeoutException, NoSuchElementException, ElementNotInteractableException) as e:
+        logger.error(f"Exception while clicking 'Add Food' button: {e}", exc_info=True)
+        driver.save_screenshot("save_food_error.png")
+        return False
     except Exception as e:
-        logger.error(f"Failed to enter food details: {e}")
+        logger.error(f"Unexpected error while clicking 'Add Food' button: {e}", exc_info=True)
+        driver.save_screenshot("save_food_error.png")
+        return False

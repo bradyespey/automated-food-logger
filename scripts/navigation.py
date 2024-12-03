@@ -1,85 +1,198 @@
 # scripts/navigation.py
-# Contains functions for navigating days, meals, etc.
 
 import logging
+from datetime import datetime
 import time
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
 
 logger = logging.getLogger(__name__)
 
-def navigate_day(driver, days):
-    """
-    Navigates forward or backward by 'days' in the Lose It! interface.
-    """
-    direction = "next" if days > 0 else "previous"
-    logger.info(f"Attempting to navigate {days} day(s) to the {direction}.")
-
+def get_current_date(driver):
     try:
-        day_button_xpath = "//div[contains(@class, '{}') and @role='button' and @title='{}']".format(
-            'nextArrowButton' if direction == 'next' else 'prevArrowButton',
-            'Next' if direction == 'next' else 'Previous'
+        current_date_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "GCJ-IGUD0B"))
         )
-        for _ in range(abs(days)):
-            for attempt in range(3):
-                try:
-                    day_button = WebDriverWait(driver, 20).until(
-                        EC.element_to_be_clickable((By.XPATH, day_button_xpath))
-                    )
-                    driver.execute_script("arguments[0].scrollIntoView(true);", day_button)
-                    day_button.click()
-                    logger.info(f"Clicked '{direction}' day button.")
-                    time.sleep(1)
-                    break
-                except Exception as e:
-                    logger.warning(f"Navigation attempt {attempt + 1} failed for '{direction}': {e}")
-                    if attempt < 2:
-                        logger.info("Retrying to navigate...")
-                        time.sleep(1)
-                    else:
-                        logger.error(f"Failed to navigate '{direction}' after 3 attempts.")
+        current_date_text = current_date_element.text.strip()
+        logger.info(f"Current date displayed in app: {current_date_text}")
+        # Expected format: 'Monday Dec 02, 2024'
+        current_date = datetime.strptime(current_date_text, '%A %b %d, %Y').date()
+        return current_date
     except Exception as e:
-        logger.error(f"Failed to navigate '{direction}': {e}")
+        logger.error(f"An error occurred while retrieving current date: {e}", exc_info=True)
+        return None
 
-def navigate_to_water_goals_page(driver):
-    """
-    Navigates to the water intake goals page.
-    """
+def parse_food_item_date(date_str):
     try:
-        goals_url = "https://www.loseit.com/#Goals:Water%20Intake%5EWater%20Intake"
-        driver.get(goals_url)
-        logger.info("Navigated to water intake goals page.")
-        time.sleep(3)
+        # Assume the year is the current year
+        current_year = datetime.today().year
+        date_obj = datetime.strptime(f"{date_str}/{current_year}", '%m/%d/%Y').date()
+        return date_obj
     except Exception as e:
-        logger.error(f"Failed to navigate to water intake goals page: {e}")
+        logger.error(f"An error occurred while parsing food item date '{date_str}': {e}", exc_info=True)
+        return None
 
-def navigate_water_day(driver, days):
-    """
-    Navigates forward or backward by 'days' in the Water Intake interface.
-    """
-    direction = "next" if days > 0 else "previous"
-    logger.info(f"Attempting to navigate {days} water day(s) to the {direction}.")
-
+def navigate_to_date(driver, target_date):
     try:
-        day_button_xpath = "//div[@role='button' and @title='{}']".format("Next" if direction == "next" else "Previous")
-        for _ in range(abs(days)):
-            for attempt in range(3):
+        max_attempts = 30  # To prevent infinite loops
+        attempts = 0
+
+        while attempts < max_attempts:
+            current_date = get_current_date(driver)
+            if not current_date:
+                logger.error("Unable to retrieve current date from the app.")
+                return False
+
+            if current_date == target_date:
+                logger.info(f"Already on the target date: {target_date}")
+                return True
+            elif current_date < target_date:
+                # Click 'Next Day' button
                 try:
-                    day_button = WebDriverWait(driver, 20).until(
-                        EC.element_to_be_clickable((By.XPATH, day_button_xpath))
+                    next_button = WebDriverWait(driver, 5).until(
+                        EC.element_to_be_clickable((By.XPATH, "//div[@role='button' and @title='Next']"))
                     )
-                    driver.execute_script("arguments[0].scrollIntoView(true);", day_button)
-                    day_button.click()
-                    logger.info(f"Clicked '{direction}' water day button.")
-                    time.sleep(1)
-                    break
-                except Exception as e:
-                    logger.warning(f"Water day navigation attempt {attempt + 1} failed: {e}")
-                    if attempt < 2:
-                        logger.info("Retrying to navigate water day...")
-                        time.sleep(1)
-                    else:
-                        logger.error(f"Failed to navigate '{direction}' water day after 3 attempts.")
+                    next_button.click()
+                    logger.info("Clicked 'Next Day' button.")
+                except TimeoutException:
+                    logger.error("Next Day button not found or not clickable.")
+                    driver.save_screenshot("next_button_not_found.png")
+                    return False
+                except ElementClickInterceptedException as e:
+                    logger.error(f"Element click intercepted: {e}")
+                    # Close any overlays
+                    close_overlays(driver)
+                    continue
+            else:
+                # Click 'Previous Day' button
+                try:
+                    prev_button = WebDriverWait(driver, 5).until(
+                        EC.element_to_be_clickable((By.XPATH, "//div[@role='button' and @title='Previous']"))
+                    )
+                    prev_button.click()
+                    logger.info("Clicked 'Previous Day' button.")
+                except TimeoutException:
+                    logger.error("Previous Day button not found or not clickable.")
+                    driver.save_screenshot("prev_button_not_found.png")
+                    return False
+                except ElementClickInterceptedException as e:
+                    logger.error(f"Element click intercepted: {e}")
+                    # Close any overlays
+                    close_overlays(driver)
+                    continue
+            time.sleep(1)  # Wait for the date to update
+            attempts += 1
+
+        logger.error(f"Failed to navigate to target date {target_date} after {max_attempts} attempts.")
+        return False
     except Exception as e:
-        logger.error(f"Failed to navigate '{direction}' on water intake page: {e}")
+        logger.error(f"An error occurred while navigating to date: {e}", exc_info=True)
+        return False
+
+def close_overlays(driver):
+    try:
+        # Look for common overlay elements and attempt to close them
+        close_buttons = driver.find_elements(By.XPATH, "//div[@role='button' and @title='Close']")
+        for button in close_buttons:
+            try:
+                button.click()
+                logger.info("Closed an overlay or popup.")
+            except Exception as e:
+                logger.error(f"Failed to click close button: {e}")
+    except Exception as e:
+        logger.error(f"An error occurred while closing overlays: {e}")
+
+def select_search_box(driver, meal_name):
+    try:
+        # Define the tabindex based on the meal
+        tabindex_map = {
+            "Breakfast": "200",
+            "Lunch": "300",
+            "Dinner": "400",
+            "Snacks": "500"
+        }
+        tabindex = tabindex_map.get(meal_name, "400")  # Default to Dinner if not found
+
+        # Locate the search input using the tabindex
+        search_input_xpath = f"//input[@tabindex='{tabindex}']"
+        search_input = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, search_input_xpath))
+        )
+        logger.info(f"Located search box for '{meal_name}'.")
+        return search_input
+    except TimeoutException:
+        logger.error(f"Search input for meal '{meal_name}' not found or not clickable.")
+        # Optional: Take a screenshot for debugging
+        driver.save_screenshot(f"select_search_box_{meal_name}_timeout.png")
+        return None
+    except Exception as e:
+        logger.error(f"An error occurred while selecting search box for meal '{meal_name}': {e}", exc_info=True)
+        return None
+
+def enter_placeholder_text(driver, search_input, placeholder_text):
+    try:
+        search_input.clear()
+        search_input.send_keys(placeholder_text)
+        search_input.send_keys(Keys.ENTER)
+        logger.info(f"Entered placeholder text '{placeholder_text}' in the search box.")
+        return True
+    except Exception as e:
+        logger.error(f"An error occurred while entering placeholder text: {e}", exc_info=True)
+        return False
+
+def wait_for_fixed_glass_invisibility(driver):
+    try:
+        WebDriverWait(driver, 10).until(
+            EC.invisibility_of_element_located((By.CLASS_NAME, "fixedGlass"))
+        )
+        logger.info("'fixedGlass' overlay is no longer visible.")
+        return True
+    except TimeoutException:
+        logger.error("'fixedGlass' overlay is still visible after waiting.")
+        # Optional: Take a screenshot for debugging
+        driver.save_screenshot("fixed_glass_still_visible.png")
+        return False
+
+def click_create_custom_food(driver):
+    try:
+        # Define the XPath for the 'Create a custom food' button
+        create_food_button_xpath = "//div[contains(@class, 'gwt-HTML') and normalize-space(text())='Create a custom food']"
+
+        # Wait until 'fixedGlass' is invisible to ensure no overlay is blocking the click
+        fixed_glass_invisible = wait_for_fixed_glass_invisibility(driver)
+        if not fixed_glass_invisible:
+            logger.error("Cannot proceed to click 'Create a custom food' due to 'fixedGlass' overlay.")
+            return False
+
+        # Locate the 'Create a custom food' button
+        create_food_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, create_food_button_xpath))
+        )
+        # Scroll into view and click
+        driver.execute_script("arguments[0].scrollIntoView(true);", create_food_button)
+        create_food_button.click()
+        logger.info("Clicked 'Create a custom food' button.")
+        return True
+    except TimeoutException:
+        logger.error("Create Food button not found or not clickable.")
+        # Optional: Take a screenshot for debugging
+        driver.save_screenshot("click_create_food_timeout.png")
+        return False
+    except ElementClickInterceptedException as e:
+        logger.error(f"Element click intercepted: {e}")
+        # Optional: Attempt to click via JavaScript as a workaround
+        try:
+            create_food_button = driver.find_element(By.XPATH, create_food_button_xpath)
+            driver.execute_script("arguments[0].click();", create_food_button)
+            logger.info("Clicked 'Create a custom food' button via JavaScript.")
+            return True
+        except Exception as ex:
+            logger.error(f"Failed to click 'Create a custom food' button via JavaScript: {ex}", exc_info=True)
+            driver.save_screenshot("click_create_food_js_timeout.png")
+            return False
+    except Exception as e:
+        logger.error(f"An error occurred while clicking 'Create a custom food' button: {e}", exc_info=True)
+        return False
