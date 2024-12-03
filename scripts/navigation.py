@@ -8,7 +8,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
+from selenium.common.exceptions import (
+    TimeoutException,
+    ElementClickInterceptedException,
+    NoSuchElementException,
+    StaleElementReferenceException,
+)
 
 # ----------------------- Configuration -----------------------
 
@@ -133,17 +138,23 @@ def select_search_box(driver, meal_name):
         }
         tabindex = tabindex_map.get(meal_name, "400")  # Default to Dinner if not found
 
-        # Locate the search input using the tabindex
-        search_input_xpath = f"//input[@tabindex='{tabindex}']"
-        search_input = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, search_input_xpath))
-        )
-        logger.info(f"Located search box for '{meal_name}'.")
-        return search_input
-    except TimeoutException:
-        logger.error(f"Search input for meal '{meal_name}' not found or not clickable.")
-        # Optional: Take a screenshot for debugging
-        driver.save_screenshot(os.path.join(LOG_DIR, f"select_search_box_{meal_name}_timeout.png"))
+        # Retry mechanism
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                # Locate the search input using the tabindex
+                search_input_xpath = f"//input[@tabindex='{tabindex}']"
+                search_input = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, search_input_xpath))
+                )
+                logger.info(f"Located search box for '{meal_name}' on attempt {attempt}.")
+                return search_input
+            except (TimeoutException, StaleElementReferenceException):
+                logger.warning(f"Attempt {attempt} to locate search input for meal '{meal_name}' failed.")
+                if attempt < max_retries:
+                    time.sleep(2)  # Wait before retrying
+                else:
+                    logger.error(f"Failed to locate search input for meal '{meal_name}' after {max_retries} attempts.")
         return None
     except Exception as e:
         logger.error(f"An error occurred while selecting search box for meal '{meal_name}': {e}", exc_info=True)
@@ -178,38 +189,32 @@ def click_create_custom_food(driver):
         # Define the XPath for the 'Create a custom food' button
         create_food_button_xpath = "//div[contains(@class, 'gwt-HTML') and normalize-space(text())='Create a custom food']"
 
-        # Wait until 'fixedGlass' is invisible to ensure no overlay is blocking the click
-        fixed_glass_invisible = wait_for_fixed_glass_invisibility(driver)
-        if not fixed_glass_invisible:
-            logger.error("Cannot proceed to click 'Create a custom food' due to 'fixedGlass' overlay.")
-            return False
+        # Retry mechanism
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            # Wait until 'fixedGlass' is invisible to ensure no overlay is blocking the click
+            fixed_glass_invisible = wait_for_fixed_glass_invisibility(driver)
+            if not fixed_glass_invisible:
+                logger.error("Cannot proceed to click 'Create a custom food' due to 'fixedGlass' overlay.")
+                return False
 
-        # Locate the 'Create a custom food' button
-        create_food_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, create_food_button_xpath))
-        )
-        # Scroll into view and click
-        driver.execute_script("arguments[0].scrollIntoView(true);", create_food_button)
-        create_food_button.click()
-        logger.info("Clicked 'Create a custom food' button.")
-        return True
-    except TimeoutException:
-        logger.error("Create Food button not found or not clickable.")
-        # Optional: Take a screenshot for debugging
-        driver.save_screenshot(os.path.join(LOG_DIR, "click_create_food_timeout.png"))
+            try:
+                # Locate the 'Create a custom food' button
+                create_food_button = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, create_food_button_xpath))
+                )
+                # Scroll into view and click
+                driver.execute_script("arguments[0].scrollIntoView(true);", create_food_button)
+                create_food_button.click()
+                logger.info(f"Clicked 'Create a custom food' button on attempt {attempt}.")
+                return True
+            except (TimeoutException, ElementClickInterceptedException, StaleElementReferenceException) as e:
+                logger.warning(f"Attempt {attempt} to click 'Create a custom food' button failed: {e}")
+                if attempt < max_retries:
+                    time.sleep(2)  # Wait before retrying
+                else:
+                    logger.error(f"Failed to click 'Create a custom food' button after {max_retries} attempts.")
         return False
-    except ElementClickInterceptedException as e:
-        logger.error(f"Element click intercepted: {e}")
-        # Optional: Attempt to click via JavaScript as a workaround
-        try:
-            create_food_button = driver.find_element(By.XPATH, create_food_button_xpath)
-            driver.execute_script("arguments[0].click();", create_food_button)
-            logger.info("Clicked 'Create a custom food' button via JavaScript.")
-            return True
-        except Exception as ex:
-            logger.error(f"Failed to click 'Create a custom food' button via JavaScript: {ex}", exc_info=True)
-            driver.save_screenshot(os.path.join(LOG_DIR, "click_create_food_js_timeout.png"))
-            return False
     except Exception as e:
         logger.error(f"An error occurred while clicking 'Create a custom food' button: {e}", exc_info=True)
         return False

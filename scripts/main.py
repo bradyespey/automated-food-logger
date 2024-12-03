@@ -1,6 +1,7 @@
 # main.py
 
 import os
+import time
 import logging
 from datetime import date, datetime
 from dotenv import load_dotenv
@@ -110,13 +111,32 @@ def main(log_text):
                 output_messages.append(f"<span style='color: red;'>Failed to navigate to date {target_date}. Skipping food item.</span>")
                 continue
 
-            # Get the meal name
-            meal_name = food_item.get("Meal", "Dinner")
-            # Select the search box for the meal
-            search_input = select_search_box(driver, meal_name)
+            # Retry mechanism for locating search box
+            max_retries = 2  # Number of times to retry before refreshing
+            for attempt in range(1, max_retries + 1):
+                # Get the meal name
+                meal_name = food_item.get("Meal", "Dinner")
+                # Select the search box for the meal
+                search_input = select_search_box(driver, meal_name)
+                if search_input:
+                    break  # Found the search input, proceed
+                else:
+                    logger.warning(f"Attempt {attempt} to locate '{meal_name}' search box failed.")
+                    if attempt < max_retries:
+                        time.sleep(2)  # Wait before retrying
+                    else:
+                        logger.info("Performing page refresh and retrying.")
+                        driver.refresh()
+                        time.sleep(3)  # Wait for the page to load
+                        # Navigate back to the target date after refresh
+                        if not navigate_to_date(driver, target_date):
+                            logger.error(f"Failed to navigate to date {target_date} after refresh. Skipping food item.")
+                            output_messages.append(f"<span style='color: red;'>Failed to navigate to date {target_date} after refresh. Skipping food item.</span>")
+                            continue  # Move to the next food item
+
             if not search_input:
-                logger.error(f"Failed to locate '{meal_name}' search box. Skipping food item.")
-                output_messages.append(f"<span style='color: red;'>Failed to locate '{meal_name}' search box. Skipping food item.</span>")
+                logger.error(f"Failed to locate '{meal_name}' search box after retries. Skipping food item.")
+                output_messages.append(f"<span style='color: red;'>Failed to locate '{meal_name}' search box after retries. Skipping food item.</span>")
                 continue
 
             # Enter placeholder text to trigger 'Create a custom food' button
@@ -126,11 +146,32 @@ def main(log_text):
                 output_messages.append("<span style='color: red;'>Failed to enter placeholder text. Skipping food item.</span>")
                 continue
 
-            # Click the 'Create a custom food' button
+            # Retry mechanism for clicking 'Create a custom food' button
             if not click_create_custom_food(driver):
-                logger.error("Failed to click 'Create a custom food' button. Skipping food item.")
-                output_messages.append("<span style='color: red;'>Failed to click 'Create a custom food' button. Skipping food item.</span>")
-                continue
+                logger.info("Attempting to refresh the page and retry clicking 'Create a custom food' button.")
+                driver.refresh()
+                time.sleep(3)  # Wait for the page to load
+                # Navigate back to the target date after refresh
+                if not navigate_to_date(driver, target_date):
+                    logger.error(f"Failed to navigate to date {target_date} after refresh. Skipping food item.")
+                    output_messages.append(f"<span style='color: red;'>Failed to navigate to date {target_date} after refresh. Skipping food item.</span>")
+                    continue  # Move to the next food item
+                # Try to locate the search box again
+                search_input = select_search_box(driver, meal_name)
+                if not search_input:
+                    logger.error(f"Failed to locate '{meal_name}' search box after refresh. Skipping food item.")
+                    output_messages.append(f"<span style='color: red;'>Failed to locate '{meal_name}' search box after refresh. Skipping food item.</span>")
+                    continue
+                # Enter placeholder text again
+                if not enter_placeholder_text(driver, search_input, placeholder_text):
+                    logger.error("Failed to enter placeholder text after refresh. Skipping food item.")
+                    output_messages.append("<span style='color: red;'>Failed to enter placeholder text after refresh. Skipping food item.</span>")
+                    continue
+                # Try clicking the 'Create a custom food' button again
+                if not click_create_custom_food(driver):
+                    logger.error("Failed to click 'Create a custom food' button after refresh. Skipping food item.")
+                    output_messages.append("<span style='color: red;'>Failed to click 'Create a custom food' button after refresh. Skipping food item.</span>")
+                    continue
 
             # Enter food details
             if not enter_food_details(driver, food_item):
