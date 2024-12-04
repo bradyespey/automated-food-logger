@@ -27,24 +27,25 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Load environment variables from .env file
 load_dotenv()
 
-# Ensure logs directory exists
-LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../logs")
-os.makedirs(LOG_DIR, exist_ok=True)
+# Configure paths
+LOG_DIR = "/tmp/test_logs"
+os.makedirs(LOG_DIR, exist_ok=True)  # Ensure temporary log directory exists
+
+TXT_FILE_PATH = "/Users/bradyespey/Projects/GitHub/LoseIt/txt/nutritional_data.txt"
+if not os.path.exists(TXT_FILE_PATH):
+    raise FileNotFoundError(f"Nutritional data file not found at: {TXT_FILE_PATH}")
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(os.path.join(LOG_DIR, "test_food_logging.log"))  # Log to a file in LOG_DIR
+        logging.StreamHandler(),  # Log to console
+        logging.FileHandler(os.path.join(LOG_DIR, "test_food_logging.log"))  # Log to a file in /tmp
     ]
 )
 logger = logging.getLogger(__name__)
-
-# Dynamically construct path to nutritional data file
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
-TXT_FILE_PATH = os.path.join(BASE_DIR, "txt/nutritional_data.txt")
+logger.info(f"Log files will be stored in: {LOG_DIR}")
 logger.info(f"Using nutritional data file path: {TXT_FILE_PATH}")
 
 # Retrieve credentials and settings from environment variables
@@ -287,7 +288,8 @@ def select_search_box(driver, meal_name):
     except TimeoutException:
         logger.error(f"Search input for meal '{meal_name}' not found or not clickable.")
         # Optional: Take a screenshot for debugging
-        driver.save_screenshot(f"select_search_box_{meal_name}_timeout.png")
+        driver.save_screenshot(os.path.join(LOG_DIR, f"select_search_box_{meal_name}_timeout.png"))
+
         return None
     except Exception as e:
         logger.error(f"An error occurred while selecting search box for meal '{meal_name}': {e}", exc_info=True)
@@ -577,22 +579,33 @@ def save_food(driver):
 def parse_food_items(filename):
     """
     Parses the food items from the given text file.
+
+    Args:
+        filename (str): Path to the text file containing food data.
+
+    Returns:
+        list: List of dictionaries representing the food items.
     """
     food_items = []
     current_food = {}
-    with open(filename, 'r') as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                if current_food:
-                    food_items.append(current_food)
-                    current_food = {}
-                continue
-            if ': ' in line:
-                key, value = line.split(': ', 1)
-                current_food[key.strip()] = value.strip()
-    if current_food:
-        food_items.append(current_food)
+    try:
+        with open(filename, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if not line:
+                    if current_food:
+                        food_items.append(current_food)
+                        current_food = {}
+                    continue
+                if ': ' in line:
+                    key, value = line.split(': ', 1)
+                    current_food[key.strip()] = value.strip()
+        if current_food:
+            food_items.append(current_food)
+    except FileNotFoundError:
+        logger.error(f"File not found: {filename}")
+    except Exception as e:
+        logger.error(f"Error reading nutritional data file: {e}", exc_info=True)
     return food_items
 
 # ----------------------- Main Execution -----------------------
@@ -614,12 +627,13 @@ def main():
             logger.error("Login verification failed. Exiting script.")
             return
 
-        # Read food items from the text file
+        # Step 3: Read food items from the text file
         if not os.path.exists(TXT_FILE_PATH):
             logger.error(f"File not found: {TXT_FILE_PATH}")
             food_items = []
         else:
-            food_items = parse_food_items(TXT_FILE_PATH)
+            logger.info(f"Using nutritional data file: {TXT_FILE_PATH}")
+            food_items = parse_food_items(TXT_FILE_PATH)  # Pass the path, not a file object
             logger.info(f"Parsed {len(food_items)} food items from the text file.")
 
         # Process each food item

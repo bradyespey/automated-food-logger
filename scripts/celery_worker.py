@@ -1,27 +1,16 @@
+# scripts/celery_worker.py
+
 from celery import Celery
 import os
 from dotenv import load_dotenv
-import logging
 import ssl
+from scripts.logging_setup import get_logger
 
 # Load environment variables
 load_dotenv()
 
-# Ensure the logs directory exists
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-log_directory = os.path.join(project_root, 'logs')
-os.makedirs(log_directory, exist_ok=True)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(os.path.join(log_directory, "celery_worker.log"))
-    ]
-)
-logger = logging.getLogger(__name__)
+# Get logger from centralized setup
+logger = get_logger("celery_worker")
 
 # Set up Redis URL
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')

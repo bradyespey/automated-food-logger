@@ -14,24 +14,12 @@ from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
 )
+from scripts.logging_setup import get_logger
+
+# Configure logger for navigation script
+logger = get_logger("navigation")
 
 # ----------------------- Configuration -----------------------
-
-# Dynamically set the base directory for logs and screenshots
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-LOG_DIR = os.path.join(BASE_DIR, "logs")
-os.makedirs(LOG_DIR, exist_ok=True)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(os.path.join(LOG_DIR, "navigation.log"))  # Log to a file in LOG_DIR
-    ]
-)
-logger = logging.getLogger(__name__)
 
 def get_current_date(driver):
     try:
@@ -81,7 +69,7 @@ def navigate_to_date(driver, target_date):
                     logger.info("Clicked 'Next Day' button.")
                 except TimeoutException:
                     logger.error("Next Day button not found or not clickable.")
-                    driver.save_screenshot(os.path.join(LOG_DIR, "next_button_not_found.png"))
+                    driver.save_screenshot("/tmp/next_button_not_found.png")
                     return False
                 except ElementClickInterceptedException as e:
                     logger.error(f"Element click intercepted: {e}")
@@ -98,7 +86,7 @@ def navigate_to_date(driver, target_date):
                     logger.info("Clicked 'Previous Day' button.")
                 except TimeoutException:
                     logger.error("Previous Day button not found or not clickable.")
-                    driver.save_screenshot(os.path.join(LOG_DIR, "prev_button_not_found.png"))
+                    driver.save_screenshot("/tmp/prev_button_not_found.png")
                     return False
                 except ElementClickInterceptedException as e:
                     logger.error(f"Element click intercepted: {e}")
@@ -181,7 +169,7 @@ def wait_for_fixed_glass_invisibility(driver):
     except TimeoutException:
         logger.error("'fixedGlass' overlay is still visible after waiting.")
         # Optional: Take a screenshot for debugging
-        driver.save_screenshot(os.path.join(LOG_DIR, "fixed_glass_still_visible.png"))
+        driver.save_screenshot("/tmp/fixed_glass_still_visible.png")
         return False
 
 def click_create_custom_food(driver):

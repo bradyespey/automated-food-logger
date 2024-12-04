@@ -114,13 +114,12 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Logs
+logs/
+
 # Sensitive files
 loseit_cookies.json
 api_credentials.json
-
-# Logs
-log/
-logs/
 
 # Old files
 old/

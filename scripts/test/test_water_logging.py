@@ -26,25 +26,25 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Load environment variables from .env file
 load_dotenv()
 
-# Set up directories
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
-LOG_DIR = os.path.join(BASE_DIR, "logs")
-os.makedirs(LOG_DIR, exist_ok=True)  # Ensure logs directory exists
+# Configure paths
+LOG_DIR = "/tmp/test_logs"
+os.makedirs(LOG_DIR, exist_ok=True)  # Ensure temporary log directory exists
+
+TXT_FILE_PATH = "/Users/bradyespey/Projects/GitHub/LoseIt/txt/nutritional_data.txt"
+if not os.path.exists(TXT_FILE_PATH):
+    raise FileNotFoundError(f"Nutritional data file not found at: {TXT_FILE_PATH}")
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(os.path.join(LOG_DIR, "test_water_logging.log"))  # Log file in LOG_DIR
+        logging.StreamHandler(),  # Log to console
+        logging.FileHandler(os.path.join(LOG_DIR, "test_food_logging.log"))  # Log to a file in /tmp/test_logs
     ]
 )
 logger = logging.getLogger(__name__)
-
-# Dynamically construct path to nutritional data file
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
-TXT_FILE_PATH = os.path.join(BASE_DIR, "txt", "nutritional_data.txt")
+logger.info(f"Log files will be stored in: {LOG_DIR}")
 logger.info(f"Using nutritional data file path: {TXT_FILE_PATH}")
 
 # Retrieve credentials and settings from environment variables

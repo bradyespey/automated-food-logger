@@ -30,17 +30,10 @@ from scripts.food_entry import enter_food_details, save_food
 from scripts.water_intake import update_water_intake
 from scripts.utils import parse_food_items, compare_items
 from scripts.fetch_logged_items import fetch_logged_items
+from scripts.logging_setup import get_logger
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,  # Set to DEBUG for more detailed logs
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(os.path.join(LOG_DIR, "main.log"))
-    ]
-)
-logger = logging.getLogger(__name__)
+# Configure logger for main script
+logger = get_logger("main")
 
 def main(log_text):
     """
@@ -58,14 +51,14 @@ def main(log_text):
         if not login(driver, LOSEIT_EMAIL, LOSEIT_PASSWORD):
             logger.error("Login failed. Exiting script.")
             output_messages.append("<span style='color: red;'>Login failed.</span>")
-            driver.save_screenshot(os.path.join(LOG_DIR, "login_failed.png"))
+            driver.save_screenshot("/tmp/login_failed.png")
             return "<br>".join(output_messages)
 
         # Step 2: Verify login
         if not verify_login(driver):
             logger.error("Login verification failed. Exiting script.")
             output_messages.append("<span style='color: red;'>Login verification failed.</span>")
-            driver.save_screenshot(os.path.join(LOG_DIR, "login_verification_failed.png"))
+            driver.save_screenshot("/tmp/login_verification_failed.png")
             return "<br>".join(output_messages)
 
         # Parse food items from the log text

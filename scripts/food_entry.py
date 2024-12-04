@@ -9,21 +9,10 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementNotInteractableException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from scripts.logging_setup import get_logger
 
-# Ensure logs directory exists
-LOG_DIR = "logs"
-os.makedirs(LOG_DIR, exist_ok=True)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,  # Adjust as needed
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(os.path.join(LOG_DIR, "food_entry.log"))
-    ]
-)
-logger = logging.getLogger(__name__)
+# Get a logger for this script
+logger = get_logger("food_entry")
 
 def parse_serving_amount(serving_amount_str):
     """
@@ -276,9 +265,9 @@ def save_food(driver):
         return True
     except (TimeoutException, NoSuchElementException, ElementNotInteractableException) as e:
         logger.error(f"Exception while clicking 'Add Food' button: {e}", exc_info=True)
-        driver.save_screenshot(os.path.join(LOG_DIR, "save_food_error.png"))
+        driver.save_screenshot("/tmp/save_food_error.png")
         return False
     except Exception as e:
         logger.error(f"Unexpected error while clicking 'Add Food' button: {e}", exc_info=True)
-        driver.save_screenshot(os.path.join(LOG_DIR, "save_food_error.png"))
+        driver.save_screenshot("/tmp/save_food_error.png")
         return False

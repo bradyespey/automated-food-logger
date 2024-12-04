@@ -7,22 +7,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from scripts.navigation import navigate_to_date
 from selenium.common.exceptions import NoSuchElementException
+from scripts.logging_setup import get_logger
 
-# Dynamically set the base directory for logs and screenshots
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-LOG_DIR = os.path.join(BASE_DIR, "logs")
-os.makedirs(LOG_DIR, exist_ok=True)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(os.path.join(LOG_DIR, "fetch_logged_items.log"))  # Log to a file in LOG_DIR
-    ]
-)
-logger = logging.getLogger(__name__)
+# Get a logger for this script
+logger = get_logger("fetch_logged_items")
 
 def fetch_logged_items(driver, target_date):
     """
