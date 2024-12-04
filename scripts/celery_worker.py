@@ -2,6 +2,7 @@ from celery import Celery
 import os
 from dotenv import load_dotenv
 import logging
+import ssl
 
 # Load environment variables
 load_dotenv()
@@ -31,10 +32,10 @@ redis_backend_use_ssl = None
 
 if REDIS_URL.startswith('rediss://'):
     broker_use_ssl = {
-        'ssl_cert_reqs': 'CERT_NONE'  # Change to 'CERT_REQUIRED' or 'CERT_OPTIONAL' if needed
+        'ssl_cert_reqs': ssl.CERT_REQUIRED  # Use CERT_OPTIONAL if you want to relax validation
     }
     redis_backend_use_ssl = {
-        'ssl_cert_reqs': 'CERT_NONE'  # Same as above
+        'ssl_cert_reqs': ssl.CERT_REQUIRED  # Same as above
     }
 
 celery = Celery(
