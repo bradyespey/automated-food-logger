@@ -8,11 +8,7 @@ from functools import wraps
 from werkzeug.middleware.proxy_fix import ProxyFix
 import logging
 from dotenv import load_dotenv
-
-# Import the Celery task
-from scripts.celery_worker import run_import_foods  # Import the Celery task
-
-from celery.result import AsyncResult  # Import AsyncResult to check task status
+from scripts.main import main as process_log
 
 # Load environment variables
 load_dotenv()
@@ -114,44 +110,17 @@ def submit_log():
 
     if log_text:
         try:
-            # Enqueue the Celery task
-            task = run_import_foods.delay(log_text)
-            logger.info(f"Task {task.id} enqueued.")
-            # Return the task ID to the client
-            return jsonify(task_id=task.id), 202
+            # Call the processing function synchronously
+            output = process_log(log_text)
+            logger.info("Log processed successfully.")
+            # Return the output directly
+            return jsonify(output=output), 200
         except Exception as e:
-            logger.error(f"Task enqueue failed: {e}")
-            return jsonify(output=f"Task enqueue failed: {e}"), 500
+            logger.error(f"Processing failed: {e}")
+            return jsonify(output=f"Processing failed: {e}"), 500
     else:
         logger.error("No log text provided.")
         return jsonify(output="No log text provided."), 400
-
-@app.route('/foodlog/task-status/<task_id>', methods=['GET'])
-@requires_auth
-def task_status(task_id):
-    task = AsyncResult(task_id)
-    if task.state == 'PENDING':
-        response = {
-            'state': task.state,
-            'status': 'Pending...'
-        }
-    elif task.state == 'SUCCESS':
-        response = {
-            'state': task.state,
-            'result': task.result  # This is the output from your task
-        }
-    elif task.state == 'FAILURE':
-        response = {
-            'state': task.state,
-            'status': str(task.info)  # Exception information
-        }
-    else:
-        # Other states: STARTED, RETRY
-        response = {
-            'state': task.state,
-            'status': str(task.info)  # Can be used to store progress information
-        }
-    return jsonify(response)
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5001))
