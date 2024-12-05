@@ -1,5 +1,5 @@
 Food Name: Test Modelo Beer  
-Date: 12/3
+Date: 12/5
 Meal: Snacks
 Brand: Modelo
 Icon: Beer  
@@ -15,7 +15,7 @@ Sugar (g): 0
 Protein (g): 6
 
 Food Name: Test Pina Colada  
-Date: 12/3
+Date: 12/5
 Meal: Breakfast  
 Brand: Bouldin Acres  
 Icon: Mixed Drink  
@@ -31,7 +31,7 @@ Sugar (g): 46
 Protein (g): 
 
 Food Name: Test Nachos w/Queso  
-Date: 12/2
+Date: 12/4
 Meal: Lunch
 Brand: 
 Icon: Tortilla Chip  
@@ -47,7 +47,7 @@ Sugar (g): 2
 Protein (g): 9  
 
 Food Name: Test Nitro Espresso Martini  
-Date: 12/2
+Date: 12/4
 Meal: Dinner  
 Brand: Homemade
 Icon: Mixed Drink  

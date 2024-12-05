@@ -2,7 +2,9 @@
 
 async function submitFoodLog() {
     const logButton = document.querySelector('.nav-buttons button:nth-child(1)');
+    const spinner = document.getElementById('spinner'); // Get the spinner element
     logButton.textContent = 'Logging...';
+    spinner.style.display = 'inline-block'; // Show spinner
     const responseMessage = document.getElementById('response-message');
     responseMessage.innerHTML = '';  // Clear previous output
     const logText = document.getElementById('food-log-text').value;
@@ -10,6 +12,7 @@ async function submitFoodLog() {
     if (!logText.trim()) {
         responseMessage.innerHTML = '<span style="color: red;">Please enter your food log.</span>';
         logButton.textContent = 'Log Food';
+        spinner.style.display = 'none'; // Hide spinner
         return;
     }
 
@@ -25,13 +28,8 @@ async function submitFoodLog() {
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
             const data = await response.json();
-            if (data.task_id) {
-                const taskId = data.task_id;
-                responseMessage.innerHTML = `Your food log is being processed. Task ID: <strong>${taskId}</strong>`;
-                // Start polling for task status
-                pollTaskStatus(taskId);
-            } else if (data.output) {
-                // Handle immediate output if returned (optional)
+            if (data.output) {
+                // Directly display the output
                 responseMessage.innerHTML = data.output;
             } else {
                 responseMessage.innerHTML = '<span style="color: red;">Unexpected response from server.</span>';
@@ -44,45 +42,13 @@ async function submitFoodLog() {
         responseMessage.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
     } finally {
         logButton.textContent = 'Log Food';
+        spinner.style.display = 'none'; // Hide spinner
     }
 }
 
-function pollTaskStatus(taskId) {
-    const responseMessage = document.getElementById('response-message');
+// Remove the pollTaskStatus function as it's no longer needed
 
-    const poll = async () => {
-        try {
-            const response = await fetch(`/foodlog/task-status/${taskId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.state === 'PENDING' || data.state === 'STARTED') {
-                responseMessage.innerHTML = `Task <strong>${taskId}</strong> is <em>${data.state}</em>...`;
-                // Poll again after 2 seconds
-                setTimeout(poll, 2000);
-            } else if (data.state === 'SUCCESS') {
-                responseMessage.innerHTML = `<span style="color: green;">Task <strong>${taskId}</strong> completed successfully.</span><br><br>${data.result}`;
-            } else if (data.state === 'FAILURE') {
-                responseMessage.innerHTML = `<span style="color: red;">Task <strong>${taskId}</strong> failed.</span><br>Error: ${data.status}`;
-            } else {
-                // Other states
-                responseMessage.innerHTML = `Task <strong>${taskId}</strong> is in state: <em>${data.state}</em>.`;
-                // Continue polling for other states like RETRY
-                setTimeout(poll, 2000);
-            }
-        } catch (error) {
-            responseMessage.innerHTML = `<span style="color: red;">Error while checking task status: ${error.message}</span>`;
-        }
-    };
-
-    poll();
-}
-
+// Retain other utility functions as they are
 function clearLog() {
     document.getElementById("food-log-text").value = "";
     document.getElementById("response-message").innerHTML = "";

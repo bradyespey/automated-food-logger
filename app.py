@@ -10,8 +10,11 @@ import logging
 from dotenv import load_dotenv
 from scripts.main import main as process_log
 
-# Load environment variables
-load_dotenv()
+# Determine the absolute path to the directory containing app.py
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+# Load environment variables from the .env file located in the same directory as app.py
+load_dotenv(os.path.join(basedir, '.env'))
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='static', template_folder='templates')
