@@ -21,13 +21,13 @@ logger = get_logger("login")
 def initialize_driver(headless=True):
     """
     Initializes the Selenium WebDriver with specified options.
-    If on Heroku (GOOGLE_CHROME_SHIM and CHROMEDRIVER_PATH set), use those.
+    If on Heroku (GOOGLE_CHROME_SHIM set), use that.
     Otherwise, use webdriver-manager locally.
     """
     try:
         chrome_options = Options()
         if headless:
-            # Use standard '--headless' for stability.
+            # Standard headless options for stability
             chrome_options.add_argument("--headless")
             chrome_options.add_argument("--disable-gpu")
             chrome_options.add_argument("--no-sandbox")
@@ -38,7 +38,7 @@ def initialize_driver(headless=True):
         else:
             chrome_options.add_argument("--start-maximized")
             logger.info("Running in headed mode.")
-    
+
         # Mimic normal browser behavior
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         chrome_options.add_argument(
@@ -48,10 +48,10 @@ def initialize_driver(headless=True):
         )
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
-    
+
         chrome_binary = os.getenv("GOOGLE_CHROME_SHIM")
-        chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
-    
+        chromedriver_path = os.getenv("CHROMEDRIVER_PATH")  # Typically set by the buildpack
+
         if chrome_binary and chromedriver_path:
             # On Heroku
             chrome_options.binary_location = chrome_binary
@@ -62,9 +62,9 @@ def initialize_driver(headless=True):
             logger.debug("GOOGLE_CHROME_SHIM and CHROMEDRIVER_PATH not set. Using webdriver-manager locally.")
             from webdriver_manager.chrome import ChromeDriverManager
             service = Service(ChromeDriverManager().install())
-    
+
         driver = webdriver.Chrome(service=service, options=chrome_options)
-    
+
         # Prevent detection as bot
         driver.execute_cdp_cmd(
             "Page.addScriptToEvaluateOnNewDocument",
@@ -76,13 +76,13 @@ def initialize_driver(headless=True):
                 """
             },
         )
-    
+
         logger.info("Chrome WebDriver initialized successfully.")
         return driver
-    
+
     except WebDriverException as e:
         logger.error(f"Failed to initialize Chrome WebDriver: {e}", exc_info=True)
-        # Raise an error instead of exit(1)
+        # Raise an error instead of exiting, allowing Flask to handle it
         raise RuntimeError("Chrome WebDriver initialization failed")
 
 def login(driver, email, password):
