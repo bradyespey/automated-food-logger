@@ -13,7 +13,6 @@ from scripts.main import main as process_log
 # Determine absolute path
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
-EXAMPLE_FILE = os.path.join(basedir, 'txt', 'nutritional_data.txt')
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key')
@@ -92,25 +91,8 @@ def foodlog():
     logger.info("Serving main application page.")
     return render_template('index.html')
 
-@app.route('/foodlog/submit-log', methods=['POST'])
-@requires_auth
-def submit_log():
-    data = request.json
-    log_text = data.get('log')
-    logger.debug(f"Received log text: {log_text}")
-
-    if log_text:
-        try:
-            output = process_log(log_text)
-            logger.info("Log processed successfully.")
-            return jsonify(output=output), 200
-        except Exception as e:
-            logger.error(f"Processing failed: {e}", exc_info=True)
-            # Do not reference driver here since it's in main.py
-            return jsonify(output=f"Processing failed: {e}"), 500
-    else:
-        logger.error("No log text provided.")
-        return jsonify(output="No log text provided."), 400
+# Define the path to the nutritional_data.txt file
+EXAMPLE_FILE = os.path.join(basedir, 'txt', 'nutritional_data.txt')
 
 @app.route('/foodlog/example', methods=['GET'])
 @requires_auth
@@ -128,6 +110,35 @@ def save_log():
     data = request.json
     log_text = data.get('log', '')
     # Overwrite the example file with the current log text
-    with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
-        f.write(log_text)
-    return "Saved", 200
+    try:
+        os.makedirs(os.path.dirname(EXAMPLE_FILE), exist_ok=True)
+        with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
+            f.write(log_text)
+        logger.info("Saved food log to nutritional_data.txt.")
+        return "Saved", 200
+    except Exception as e:
+        logger.error(f"Failed to save food log: {e}", exc_info=True)
+        return "Failed to save log.", 500
+
+@app.route('/foodlog/submit-log', methods=['POST'])
+@requires_auth
+def submit_log():
+    data = request.json
+    log_text = data.get('log')
+    logger.debug(f"Received log text: {log_text}")
+
+    if log_text:
+        try:
+            output = process_log(log_text)
+            logger.info("Log processed successfully.")
+            # Save the current log to nutritional_data.txt
+            response = save_log()
+            if response.status_code != 200:
+                logger.error("Failed to save the log after processing.")
+            return jsonify(output=output), 200
+        except Exception as e:
+            logger.error(f"Processing failed: {e}", exc_info=True)
+            return jsonify(output=f"Processing failed: {e}"), 500
+    else:
+        logger.error("No log text provided.")
+        return jsonify(output="No log text provided."), 400

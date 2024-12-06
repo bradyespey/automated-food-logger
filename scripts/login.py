@@ -21,7 +21,7 @@ logger = get_logger("login")
 def initialize_driver(headless=True):
     """
     Initializes the Selenium WebDriver with specified options.
-    If on Heroku (GOOGLE_CHROME_BIN and CHROMEDRIVER_PATH set), use those.
+    If on Heroku (GOOGLE_CHROME_SHIM and CHROMEDRIVER_PATH set), use those.
     Otherwise, use webdriver-manager locally.
     """
     try:
@@ -38,18 +38,20 @@ def initialize_driver(headless=True):
         else:
             chrome_options.add_argument("--start-maximized")
             logger.info("Running in headed mode.")
-
+    
         # Mimic normal browser behavior
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         chrome_options.add_argument(
-            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
         )
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
-
-        chrome_binary = os.getenv("GOOGLE_CHROME_BIN")
+    
+        chrome_binary = os.getenv("GOOGLE_CHROME_SHIM")
         chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
-
+    
         if chrome_binary and chromedriver_path:
             # On Heroku
             chrome_options.binary_location = chrome_binary
@@ -57,12 +59,12 @@ def initialize_driver(headless=True):
             service = Service(executable_path=chromedriver_path)
         else:
             # Locally
-            logger.debug("GOOGLE_CHROME_BIN and CHROMEDRIVER_PATH not set. Using webdriver-manager locally.")
+            logger.debug("GOOGLE_CHROME_SHIM and CHROMEDRIVER_PATH not set. Using webdriver-manager locally.")
             from webdriver_manager.chrome import ChromeDriverManager
             service = Service(ChromeDriverManager().install())
-
+    
         driver = webdriver.Chrome(service=service, options=chrome_options)
-
+    
         # Prevent detection as bot
         driver.execute_cdp_cmd(
             "Page.addScriptToEvaluateOnNewDocument",
@@ -74,10 +76,10 @@ def initialize_driver(headless=True):
                 """
             },
         )
-
+    
         logger.info("Chrome WebDriver initialized successfully.")
         return driver
-
+    
     except WebDriverException as e:
         logger.error(f"Failed to initialize Chrome WebDriver: {e}", exc_info=True)
         # Raise an error instead of exit(1)
