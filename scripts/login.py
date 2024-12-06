@@ -21,14 +21,13 @@ logger = get_logger("login")
 def initialize_driver(headless=True):
     """
     Initializes the Selenium WebDriver with specified options.
-    If on Heroku (GOOGLE_CHROME_SHIM set), use that.
-    Otherwise, use webdriver-manager locally.
+    Uses environment variables set by Heroku buildpacks.
     """
     try:
         chrome_options = Options()
         if headless:
-            # Standard headless options for stability
-            chrome_options.add_argument("--headless")
+            # Updated headless flag for newer Chrome versions
+            chrome_options.add_argument("--headless=new")
             chrome_options.add_argument("--disable-gpu")
             chrome_options.add_argument("--no-sandbox")
             chrome_options.add_argument("--disable-dev-shm-usage")
@@ -49,8 +48,8 @@ def initialize_driver(headless=True):
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
 
-        chrome_binary = os.getenv("GOOGLE_CHROME_SHIM")
-        chromedriver_path = os.getenv("CHROMEDRIVER_PATH")  # Typically set by the buildpack
+        chrome_binary = os.getenv("GOOGLE_CHROME_BIN")
+        chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
 
         if chrome_binary and chromedriver_path:
             # On Heroku
@@ -59,7 +58,7 @@ def initialize_driver(headless=True):
             service = Service(executable_path=chromedriver_path)
         else:
             # Locally
-            logger.debug("GOOGLE_CHROME_SHIM and CHROMEDRIVER_PATH not set. Using webdriver-manager locally.")
+            logger.debug("GOOGLE_CHROME_BIN and CHROMEDRIVER_PATH not set. Using webdriver-manager locally.")
             from webdriver_manager.chrome import ChromeDriverManager
             service = Service(ChromeDriverManager().install())
 

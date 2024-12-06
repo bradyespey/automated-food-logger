@@ -2,7 +2,7 @@
 
 import os
 import secrets
-from flask import Flask, redirect, url_for, session, request, jsonify, render_template
+from flask import Flask, redirect, url_for, session, request, jsonify, render_template, Response
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -150,5 +150,3 @@ def debug_env():
     chrome_shim = os.getenv("GOOGLE_CHROME_SHIM")
     chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
     return Response(f"GOOGLE_CHROME_SHIM: {chrome_shim}\nCHROMEDRIVER_PATH: {chromedriver_path}", mimetype='text/plain')
-
-Explanation:
