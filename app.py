@@ -142,3 +142,13 @@ def submit_log():
     else:
         logger.error("No log text provided.")
         return jsonify(output="No log text provided."), 400
+
+# Temporary route for debugging
+@app.route('/debug/env')
+@requires_auth
+def debug_env():
+    chrome_shim = os.getenv("GOOGLE_CHROME_SHIM")
+    chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
+    return Response(f"GOOGLE_CHROME_SHIM: {chrome_shim}\nCHROMEDRIVER_PATH: {chromedriver_path}", mimetype='text/plain')
+
+Explanation:
