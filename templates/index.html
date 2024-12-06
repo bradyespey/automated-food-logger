@@ -2,13 +2,12 @@
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Food Log</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="icon" href="/static/images/loseit_icon.png" type="image/png">
+    <link rel="stylesheet" href="/static/css/styles.css" />
+    <link rel="icon" href="/static/images/loseit_icon.png" type="image/png" />
 </head>
 
 <body>
@@ -21,6 +20,7 @@
         <div class="nav-buttons">
             <button onclick="submitFoodLog()">Log Food</button>
             <button onclick="clearLog()">Clear</button>
+            <button onclick="loadExample()">Example</button>
             <button onclick="openFoodvisor()">Foodvisor</button>
             <button onclick="showHydrationCalculator()">Hydration Calculator</button>
             <button onclick="copyOutput()">Copy Output</button>
@@ -30,10 +30,9 @@
     <div class="content-wrapper" id="food-log-section">
         <div class="input-section">
             <textarea id="food-log-text" rows="20" cols="50" placeholder="Paste your food log text here..."></textarea>
-        </div>        
+        </div>
         <div class="output-section">
             <div id="response-message">
-                <!-- Spinner Element -->
                 <div id="spinner"></div>
             </div>
         </div>
@@ -74,5 +73,4 @@
 
     <script src="/static/js/script.js"></script>
 </body>
-
 </html>
