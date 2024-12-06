@@ -48,8 +48,12 @@ def initialize_driver(headless=True):
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
 
-        chrome_binary = os.getenv("GOOGLE_CHROME_BIN")
+        chrome_binary = os.getenv("GOOGLE_CHROME_SHIM")
         chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
+
+        # Log environment variables for debugging (ensure this is secure and removed in production)
+        logger.debug(f"GOOGLE_CHROME_SHIM is set: {'Yes' if chrome_binary else 'No'}")
+        logger.debug(f"CHROMEDRIVER_PATH is set: {'Yes' if chromedriver_path else 'No'}")
 
         if chrome_binary and chromedriver_path:
             # On Heroku
@@ -58,7 +62,7 @@ def initialize_driver(headless=True):
             service = Service(executable_path=chromedriver_path)
         else:
             # Locally
-            logger.debug("GOOGLE_CHROME_BIN and CHROMEDRIVER_PATH not set. Using webdriver-manager locally.")
+            logger.debug("GOOGLE_CHROME_SHIM and CHROMEDRIVER_PATH not set. Using webdriver-manager locally.")
             from webdriver_manager.chrome import ChromeDriverManager
             service = Service(ChromeDriverManager().install())
 
