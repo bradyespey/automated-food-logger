@@ -9,6 +9,22 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import logging
 from dotenv import load_dotenv
 from scripts.main import main as process_log
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+# --------------------- Sentry Integration ---------------------
+
+# Initialize Sentry before creating the Flask app to capture all errors
+sentry_sdk.init(
+    dsn="https://2f36a27c3dc7805927d26369cb8c19b1@o4508423835549696.ingest.us.sentry.io/4508423887519744",
+    integrations=[FlaskIntegration()],
+    traces_sample_rate=1.0,
+    _experiments={
+        "continuous_profiling_auto_start": True,
+    },
+)
+
+# --------------------- Flask App Setup ---------------------
 
 # Determine absolute path
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -94,31 +110,37 @@ def foodlog():
 # Define the path to the nutritional_data.txt file
 EXAMPLE_FILE = os.path.join(basedir, 'txt', 'nutritional_data.txt')
 
-@app.route('/foodlog/example', methods=['GET'])
-@requires_auth
-def get_example():
-    if os.path.exists(EXAMPLE_FILE):
-        with open(EXAMPLE_FILE, 'r', encoding='utf-8') as f:
-            content = f.read()
-        return content, 200
-    else:
-        return "No example file found.", 404
+# --------------------- Separate Saving Function ---------------------
+
+def save_log_to_file(log_text):
+    """
+    Saves the provided log_text to the nutritional_data.txt file.
+    Returns True if successful, False otherwise.
+    """
+    try:
+        os.makedirs(os.path.dirname(EXAMPLE_FILE), exist_ok=True)
+        with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
+            f.write(log_text)
+        logger.info("Saved food log to nutritional_data.txt.")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to save food log: {e}", exc_info=True)
+        return False
+
+# --------------------- Modified save_log Route ---------------------
 
 @app.route('/foodlog/save', methods=['POST'])
 @requires_auth
 def save_log():
     data = request.json
     log_text = data.get('log', '')
-    # Overwrite the example file with the current log text
-    try:
-        os.makedirs(os.path.dirname(EXAMPLE_FILE), exist_ok=True)
-        with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
-            f.write(log_text)
-        logger.info("Saved food log to nutritional_data.txt.")
+    success = save_log_to_file(log_text)
+    if success:
         return "Saved", 200
-    except Exception as e:
-        logger.error(f"Failed to save food log: {e}", exc_info=True)
+    else:
         return "Failed to save log.", 500
+
+# --------------------- Updated submit_log Function ---------------------
 
 @app.route('/foodlog/submit-log', methods=['POST'])
 @requires_auth
@@ -131,10 +153,11 @@ def submit_log():
         try:
             output = process_log(log_text)
             logger.info("Log processed successfully.")
-            # Save the current log to nutritional_data.txt
-            response = save_log()
-            if response.status_code != 200:
+            # Save the current log to nutritional_data.txt using the separate function
+            success = save_log_to_file(log_text)
+            if not success:
                 logger.error("Failed to save the log after processing.")
+                return jsonify({"error": "Failed to save log."}), 500
             return jsonify(output=output), 200
         except Exception as e:
             logger.error(f"Processing failed: {e}", exc_info=True)
@@ -143,10 +166,16 @@ def submit_log():
         logger.error("No log text provided.")
         return jsonify(output="No log text provided."), 400
 
-# Temporary route for debugging
+# --------------------- Temporary Route for Debugging ---------------------
+
 @app.route('/debug/env')
 @requires_auth
 def debug_env():
     chrome_shim = os.getenv("GOOGLE_CHROME_SHIM")
     chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
     return Response(f"GOOGLE_CHROME_SHIM: {chrome_shim}\nCHROMEDRIVER_PATH: {chromedriver_path}", mimetype='text/plain')
+
+# --------------------- Run the Flask App ---------------------
+
+if __name__ == "__main__":
+    app.run(debug=(env == 'dev'))
