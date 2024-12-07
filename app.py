@@ -14,14 +14,10 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 
 # --------------------- Sentry Integration ---------------------
 
-# Initialize Sentry before creating the Flask app to capture all errors
 sentry_sdk.init(
-    dsn="https://2f36a27c3dc7805927d26369cb8c19b1@o4508423835549696.ingest.us.sentry.io/4508423887519744",
+    dsn=os.getenv("SENTRY_DSN"),  # Ensure this environment variable is set in Heroku
     integrations=[FlaskIntegration()],
     traces_sample_rate=1.0,
-    _experiments={
-        "continuous_profiling_auto_start": True,
-    },
 )
 
 # --------------------- Flask App Setup ---------------------
