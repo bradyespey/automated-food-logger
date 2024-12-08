@@ -11,7 +11,7 @@ from selenium.common.exceptions import (
     WebDriverException,
 )
 
-from scripts.utils import close_overlays
+from scripts.navigation import close_overlays
 
 def retry_on_failure(max_retries=3, delay=2):
     def decorator(func):

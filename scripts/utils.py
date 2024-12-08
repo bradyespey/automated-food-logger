@@ -65,6 +65,7 @@ def compare_values(field_name, input_value, logged_value):
             logger.warning(f"{field_name}: Mismatch (input: {input_num}, logged: {logged_num})")
             return f'<span style="color: red;">**{field_name}:** {logged_num} (does not match input value {input_value})</span><br>'
     except ValueError:
+        # Fallback to string comparison
         if str(input_value).strip().lower() == str(logged_value).strip().lower():
             logger.info(f"{field_name}: String match found")
             return f'<span style="color: green;">**{field_name}:** {logged_value} (matches input value)</span><br>'
@@ -75,8 +76,11 @@ def compare_values(field_name, input_value, logged_value):
 # Compare lists of food items and generate HTML report
 def compare_items(input_items, logged_items):
     comparison = ""
+    # We'll assume that logged_items correspond to input_items in order.
+    # If needed, you can match them by "Food Name" as before.
     for idx, input_item in enumerate(input_items, 1):
         comparison += f"<b>Verifying item {idx} of {len(input_items)}: {input_item.get('Food Name', '')}</b><br>"
+
         # Find matching logged item by Food Name
         logged_item = next((item for item in logged_items if item.get('Food Name', '').lower() == input_item.get('Food Name', '').lower()), None)
         if not logged_item:

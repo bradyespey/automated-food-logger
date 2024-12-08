@@ -41,13 +41,21 @@ def parse_food_item_date(date_str):
 
 def close_overlays(driver):
     try:
-        close_buttons = driver.find_elements(By.XPATH, "//div[@role='button' and @title='Close']")
-        for button in close_buttons:
-            try:
-                button.click()
-                logger.info("Closed an overlay or popup.")
-            except Exception as e:
-                logger.error(f"Failed to click close button: {e}")
+        # Common overlay selectors; adjust based on actual overlays
+        overlay_selectors = [
+            "//div[@role='button' and @title='Close']",
+            "//button[contains(text(), 'Close')]",
+            "//div[contains(@class, 'overlay')]//button[contains(text(), 'Close')]"
+        ]
+        for selector in overlay_selectors:
+            buttons = driver.find_elements(By.XPATH, selector)
+            for btn in buttons:
+                try:
+                    btn.click()
+                    logger.info("Closed an overlay or popup.")
+                    time.sleep(1)  # Allow time for the overlay to close
+                except Exception as e:
+                    logger.error(f"Failed to click overlay close button: {e}")
     except Exception as e:
         logger.error(f"Error while closing overlays: {e}")
 
