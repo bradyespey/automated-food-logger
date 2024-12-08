@@ -2,6 +2,8 @@
 
 import logging
 import os
+from selenium.webdriver.common.by import By
+import time
 
 # Ensure logs directory exists
 LOG_DIR = "logs"
@@ -9,7 +11,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,  # Adjust to DEBUG if needed
+    level=logging.INFO,  # Change to DEBUG for more detailed logs
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
@@ -18,16 +20,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Parse food items from log text
 def parse_food_items(log_text):
-    """
-    Parses the food items from the given log text.
-
-    Args:
-        log_text (str): The input text containing food items.
-
-    Returns:
-        list: A list of dictionaries, each representing a food item.
-    """
     food_items = []
     current_food = {}
     for line in log_text.strip().splitlines():
@@ -44,54 +38,33 @@ def parse_food_items(log_text):
         food_items.append(current_food)
     return food_items
 
+# Compare numeric values and return HTML-formatted result
 def compare_numeric_values(field_name, input_value, logged_value):
-    """
-    Compares numeric values and returns an HTML-formatted string indicating match status.
-
-    Args:
-        field_name (str): The name of the field being compared.
-        input_value (str or float): The value from the input.
-        logged_value (str or float): The value from the logged data.
-
-    Returns:
-        str: HTML-formatted comparison result.
-    """
     try:
-        input_value_num = float(input_value)
-        logged_value_num = float(logged_value)
-        if abs(input_value_num - logged_value_num) < 1e-6:
-            logger.info(f"{field_name}: Match found ({logged_value_num})")
-            return f'<span style="color: green;">**{field_name}:** {logged_value_num} (matches input value {input_value_num})</span><br>'
+        input_num = float(input_value)
+        logged_num = float(logged_value)
+        if abs(input_num - logged_num) < 1e-6:
+            logger.info(f"{field_name}: Match found ({logged_num})")
+            return f'<span style="color: green;">**{field_name}:** {logged_num} (matches input value {input_num})</span><br>'
         else:
-            logger.warning(f"{field_name}: Mismatch (input: {input_value_num}, logged: {logged_value_num})")
-            return f'<span style="color: red;">**{field_name}:** {logged_value_num} (does not match input value {input_value_num})</span><br>'
+            logger.warning(f"{field_name}: Mismatch (input: {input_num}, logged: {logged_num})")
+            return f'<span style="color: red;">**{field_name}:** {logged_num} (does not match input value {input_value})</span><br>'
     except ValueError:
-        logger.error(f"Invalid numerical values for comparison in {field_name}: {input_value}, {logged_value}")
+        logger.error(f"Invalid numerical values for {field_name}: {input_value}, {logged_value}")
         return f'<span style="color: red;">**{field_name}:** Invalid numerical values for comparison</span><br>'
 
+# Compare values (numeric or string) and return HTML-formatted result
 def compare_values(field_name, input_value, logged_value):
-    """
-    Compares values (numeric or string) and returns an HTML-formatted string indicating match status.
-
-    Args:
-        field_name (str): The name of the field being compared.
-        input_value (str or float): The value from the input.
-        logged_value (str or float): The value from the logged data.
-
-    Returns:
-        str: HTML-formatted comparison result.
-    """
     try:
-        input_value_num = float(input_value)
-        logged_value_num = float(logged_value)
-        if abs(input_value_num - logged_value_num) < 1e-6:
-            logger.info(f"{field_name}: Match found ({logged_value_num})")
-            return f'<span style="color: green;">**{field_name}:** {logged_value_num} (matches input value)</span><br>'
+        input_num = float(input_value)
+        logged_num = float(logged_value)
+        if abs(input_num - logged_num) < 1e-6:
+            logger.info(f"{field_name}: Match found ({logged_num})")
+            return f'<span style="color: green;">**{field_name}:** {logged_num} (matches input value)</span><br>'
         else:
-            logger.warning(f"{field_name}: Mismatch (input: {input_value_num}, logged: {logged_value_num})")
-            return f'<span style="color: red;">**{field_name}:** {logged_value_num} (does not match input value {input_value})</span><br>'
+            logger.warning(f"{field_name}: Mismatch (input: {input_num}, logged: {logged_num})")
+            return f'<span style="color: red;">**{field_name}:** {logged_num} (does not match input value {input_value})</span><br>'
     except ValueError:
-        # Fallback to string comparison
         if str(input_value).strip().lower() == str(logged_value).strip().lower():
             logger.info(f"{field_name}: String match found")
             return f'<span style="color: green;">**{field_name}:** {logged_value} (matches input value)</span><br>'
@@ -99,49 +72,60 @@ def compare_values(field_name, input_value, logged_value):
             logger.warning(f"{field_name}: String mismatch")
             return f'<span style="color: red;">**{field_name}:** {logged_value} (does not match input value {input_value})</span><br>'
 
+# Compare lists of food items and generate HTML report
 def compare_items(input_items, logged_items):
-    """
-    Compares input items with logged items and returns an HTML-formatted comparison report.
-
-    Args:
-        input_items (list): List of input food items.
-        logged_items (list): List of logged food items.
-
-    Returns:
-        str: HTML-formatted comparison report.
-    """
-    comparison_check = ""
-    for index, input_item in enumerate(input_items, 1):
-        comparison_check += f"<b>Verifying item {index} of {len(input_items)}: {input_item.get('Food Name', '')}</b><br>"
-        # Find matching logged item
-        logged_item = next((item for item in logged_items if item.get('Food Name', '') == input_item.get('Food Name', '')), None)
+    comparison = ""
+    for idx, input_item in enumerate(input_items, 1):
+        comparison += f"<b>Verifying item {idx} of {len(input_items)}: {input_item.get('Food Name', '')}</b><br>"
+        # Find matching logged item by Food Name
+        logged_item = next((item for item in logged_items if item.get('Food Name', '').lower() == input_item.get('Food Name', '').lower()), None)
         if not logged_item:
             logger.error(f"Logged item not found for {input_item.get('Food Name', 'Unknown')}")
-            comparison_check += f"<span style='color: red;'>Logged item not found for {input_item.get('Food Name', '')}</span><br><br>"
+            comparison += f"<span style='color: red;'>Logged item not found for {input_item.get('Food Name', '')}</span><br><br>"
             continue
 
-        fields_to_compare = [
+        fields = [
             "Date", "Meal", "Brand", "Calories", "Fat (g)", "Saturated Fat (g)",
             "Cholesterol (mg)", "Sodium (mg)", "Carbs (g)", "Fiber (g)",
             "Sugar (g)", "Protein (g)"
         ]
 
-        for field in fields_to_compare:
-            comparison_check += compare_values(field, input_item.get(field, ''), logged_item.get(field, ''))
+        for field in fields:
+            comparison += compare_values(field, input_item.get(field, ''), logged_item.get(field, ''))
 
-        # Compare fluid ounces if present
-        input_fluid_ounces = input_item.get('fluid_ounces', None)
-        logged_fluid_ounces = logged_item.get('fluid_ounces_added', None)
-        if input_fluid_ounces is not None and logged_fluid_ounces is not None:
-            comparison_check += compare_numeric_values("Fluid Ounces", input_fluid_ounces, logged_fluid_ounces)
-        comparison_check += "<br>"
+        # Compare fluid ounces if available
+        input_fluid = input_item.get('fluid_ounces')
+        logged_fluid = logged_item.get('fluid_ounces_added')
+        if input_fluid and logged_fluid:
+            comparison += compare_numeric_values("Fluid Ounces", input_fluid, logged_fluid)
+        comparison += "<br>"
 
     # Compare total fluid ounces
-    total_input_fluid_ounces = sum(float(item.get('fluid_ounces', 0.0)) for item in input_items if item.get('fluid_ounces') is not None)
-    total_logged_fluid_ounces = sum(float(item.get('fluid_ounces_added', 0.0)) for item in logged_items if item.get('fluid_ounces_added') is not None)
+    total_input_fluid = sum(float(item.get('fluid_ounces', 0.0)) for item in input_items if item.get('fluid_ounces'))
+    total_logged_fluid = sum(float(item.get('fluid_ounces_added', 0.0)) for item in logged_items if item.get('fluid_ounces_added'))
+    logger.info(f"Total fluid ounces - Input: {total_input_fluid}, Logged: {total_logged_fluid}")
+    comparison += "<b style='color: #f9c74f;'>Total Fluid Ounces Comparison:</b><br>"
+    comparison += compare_numeric_values("Total Fluid Ounces", total_input_fluid, total_logged_fluid)
 
-    logger.info(f"Total fluid ounces - Input: {total_input_fluid_ounces}, Logged: {total_logged_fluid_ounces}")
-    comparison_check += "<b style='color: #f9c74f;'>Total Fluid Ounces Comparison:</b><br>"
-    comparison_check += compare_numeric_values("Total Fluid Ounces", total_input_fluid_ounces, total_logged_fluid_ounces)
+    return comparison
 
-    return comparison_check
+# Close overlays or popups
+def close_overlays(driver):
+    try:
+        # Common overlay selectors; adjust based on actual overlays
+        overlay_selectors = [
+            "//div[@role='button' and @title='Close']",
+            "//button[contains(text(), 'Close')]",
+            "//div[contains(@class, 'overlay')]//button[contains(text(), 'Close')]"
+        ]
+        for selector in overlay_selectors:
+            buttons = driver.find_elements(By.XPATH, selector)
+            for btn in buttons:
+                try:
+                    btn.click()
+                    logger.info("Closed an overlay or popup.")
+                    time.sleep(1)  # Allow time for the overlay to close
+                except Exception as e:
+                    logger.error(f"Failed to click overlay close button: {e}")
+    except Exception as e:
+        logger.error(f"Error while closing overlays: {e}")

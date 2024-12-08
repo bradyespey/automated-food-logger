@@ -12,17 +12,12 @@ from scripts.main import main as process_log
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-# --------------------- Sentry Integration ---------------------
-
 sentry_sdk.init(
-    dsn=os.getenv("SENTRY_DSN"),  # Ensure this environment variable is set in Heroku
+    dsn=os.getenv("SENTRY_DSN"),
     integrations=[FlaskIntegration()],
     traces_sample_rate=1.0,
 )
 
-# --------------------- Flask App Setup ---------------------
-
-# Determine absolute path
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
@@ -32,22 +27,17 @@ app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key')
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 env = os.getenv('ENV', 'dev')
-if env == 'dev':
-    logging_level = logging.DEBUG
-else:
-    logging_level = logging.INFO
-
+logging_level = logging.DEBUG if env == 'dev' else logging.INFO
 logging.basicConfig(level=logging_level)
 logger = logging.getLogger(__name__)
 
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
-    client_id=os.environ.get('CLIENT_ID'),
-    client_secret=os.environ.get('CLIENT_SECRET'),
+    client_id=os.getenv('CLIENT_ID'),
+    client_secret=os.getenv('CLIENT_SECRET'),
     access_token_url='https://oauth2.googleapis.com/token',
     authorize_url='https://accounts.google.com/o/oauth2/auth',
-    authorize_params=None,
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={
         'scope': 'openid profile email',
@@ -62,7 +52,7 @@ def requires_auth(f):
     def decorated(*args, **kwargs):
         if 'user' not in session:
             logger.info("User not authenticated. Redirecting to login.")
-            return redirect(url_for('login'))
+            return redirect(url_for('login_route'))
         return f(*args, **kwargs)
     return decorated
 
@@ -71,7 +61,7 @@ def home():
     return redirect(url_for('foodlog'))
 
 @app.route('/foodlog/login')
-def login():
+def login_route():
     redirect_uri = url_for('authorize', _external=True)
     nonce = secrets.token_urlsafe(16)
     session['nonce'] = nonce
@@ -88,14 +78,14 @@ def authorize():
         logger.info(f"User authenticated: {user_info}")
         return redirect(url_for('foodlog'))
     except Exception as e:
-        logger.error(f"OAuth authorization failed: {e}")
+        logger.error(f"OAuth authorization failed: {e}", exc_info=True)
         return "Authorization failed.", 500
 
 @app.route('/foodlog/logout')
 def logout():
     session.pop('user', None)
     logger.info("User logged out.")
-    return redirect(url_for('login'))
+    return redirect(url_for('login_route'))
 
 @app.route('/foodlog')
 @requires_auth
@@ -103,18 +93,18 @@ def foodlog():
     logger.info("Serving main application page.")
     return render_template('index.html')
 
-# Define the path to the nutritional_data.txt file
-EXAMPLE_FILE = os.path.join(basedir, 'txt', 'nutritional_data.txt')
+EXAMPLE_DIR = os.path.join(basedir, 'txt')
+EXAMPLE_FILE = os.path.join(EXAMPLE_DIR, 'nutritional_data.txt')
 
-# --------------------- Separate Saving Function ---------------------
+if not os.path.exists(EXAMPLE_DIR):
+    os.makedirs(EXAMPLE_DIR, exist_ok=True)
+
+if not os.path.exists(EXAMPLE_FILE):
+    with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
+        f.write("Sample food log content.\nYou can modify this file at runtime, but changes won't persist after a dyno restart.\n")
 
 def save_log_to_file(log_text):
-    """
-    Saves the provided log_text to the nutritional_data.txt file.
-    Returns True if successful, False otherwise.
-    """
     try:
-        os.makedirs(os.path.dirname(EXAMPLE_FILE), exist_ok=True)
         with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
             f.write(log_text)
         logger.info("Saved food log to nutritional_data.txt.")
@@ -123,7 +113,16 @@ def save_log_to_file(log_text):
         logger.error(f"Failed to save food log: {e}", exc_info=True)
         return False
 
-# --------------------- Modified save_log Route ---------------------
+@app.route('/foodlog/example', methods=['GET'])
+@requires_auth
+def get_example():
+    if os.path.exists(EXAMPLE_FILE):
+        with open(EXAMPLE_FILE, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return content, 200
+    else:
+        logger.warning("No example file found.")
+        return "No example file found.", 404
 
 @app.route('/foodlog/save', methods=['POST'])
 @requires_auth
@@ -136,8 +135,6 @@ def save_log():
     else:
         return "Failed to save log.", 500
 
-# --------------------- Updated submit_log Function ---------------------
-
 @app.route('/foodlog/submit-log', methods=['POST'])
 @requires_auth
 def submit_log():
@@ -149,7 +146,6 @@ def submit_log():
         try:
             output = process_log(log_text)
             logger.info("Log processed successfully.")
-            # Save the current log to nutritional_data.txt using the separate function
             success = save_log_to_file(log_text)
             if not success:
                 logger.error("Failed to save the log after processing.")
@@ -162,8 +158,6 @@ def submit_log():
         logger.error("No log text provided.")
         return jsonify(output="No log text provided."), 400
 
-# --------------------- Temporary Route for Debugging ---------------------
-
 @app.route('/debug/env')
 @requires_auth
 def debug_env():
@@ -171,7 +165,15 @@ def debug_env():
     chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
     return Response(f"GOOGLE_CHROME_SHIM: {chrome_shim}\nCHROMEDRIVER_PATH: {chromedriver_path}", mimetype='text/plain')
 
-# --------------------- Run the Flask App ---------------------
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"Internal server error: {error}", exc_info=True)
+    return "Internal Server Error", 500
+
+@app.errorhandler(Exception)
+def unhandled_exception(e):
+    logger.error(f"Unhandled exception: {e}", exc_info=True)
+    return "Internal Server Error", 500
 
 if __name__ == "__main__":
     app.run(debug=(env == 'dev'))

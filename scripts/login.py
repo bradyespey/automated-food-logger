@@ -19,14 +19,9 @@ from scripts.logging_setup import get_logger
 logger = get_logger("login")
 
 def initialize_driver(headless=True):
-    """
-    Initializes the Selenium WebDriver with specified options.
-    Uses environment variables set by Heroku buildpacks.
-    """
     try:
         chrome_options = Options()
         if headless:
-            # Updated headless flag for newer Chrome versions
             chrome_options.add_argument("--headless=new")
             chrome_options.add_argument("--disable-gpu")
             chrome_options.add_argument("--no-sandbox")
@@ -51,17 +46,14 @@ def initialize_driver(headless=True):
         chrome_binary = os.getenv("GOOGLE_CHROME_SHIM")
         chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
 
-        # Log environment variables for debugging (ensure this is secure and removed in production)
         logger.debug(f"GOOGLE_CHROME_SHIM is set: {'Yes' if chrome_binary else 'No'}")
         logger.debug(f"CHROMEDRIVER_PATH is set: {'Yes' if chromedriver_path else 'No'}")
 
         if chrome_binary and chromedriver_path:
-            # On Heroku
             chrome_options.binary_location = chrome_binary
             logger.debug(f"Using Chrome binary at: {chrome_binary}")
             service = Service(executable_path=chromedriver_path)
         else:
-            # Locally
             logger.debug("GOOGLE_CHROME_SHIM and CHROMEDRIVER_PATH not set. Using webdriver-manager locally.")
             from webdriver_manager.chrome import ChromeDriverManager
             service = Service(ChromeDriverManager().install())
@@ -85,13 +77,9 @@ def initialize_driver(headless=True):
 
     except WebDriverException as e:
         logger.error(f"Failed to initialize Chrome WebDriver: {e}", exc_info=True)
-        # Raise an error instead of exiting, allowing Flask to handle it
         raise RuntimeError("Chrome WebDriver initialization failed")
 
 def login(driver, email, password):
-    """
-    Logs into Lose It! using provided credentials.
-    """
     try:
         login_url = "https://my.loseit.com/login?r=https://www.loseit.com/"
         driver.get(login_url)
@@ -133,9 +121,6 @@ def login(driver, email, password):
         return False
 
 def verify_login(driver):
-    """
-    Verifies that the user is successfully logged in by checking a known post-login element.
-    """
     try:
         current_date_element = WebDriverWait(driver, 15).until(
             EC.visibility_of_element_located((By.CLASS_NAME, "GCJ-IGUD0B"))
