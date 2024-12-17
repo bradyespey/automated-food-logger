@@ -43,6 +43,14 @@ def initialize_driver(headless=True):
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
 
+        # **Add the following preferences to disable password saving prompts**
+        prefs = {
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False
+        }
+        chrome_options.add_experimental_option("prefs", prefs)
+        logger.debug("Disabled Chrome password manager.")
+
         chrome_binary = os.getenv("GOOGLE_CHROME_SHIM")
         chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
 

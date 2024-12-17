@@ -1,63 +1,95 @@
-Food Name: Test Modelo Beer  
-Date: 12/8
-Meal: Snacks
-Brand: Modelo
-Icon: Beer  
-Serving Size: 12 fluid ounces
-Calories: 600  
-Fat (g): 2 
-Saturated Fat (g): 3.5  
-Cholesterol (mg): 4.25  
-Sodium (mg): 45  
-Carbs (g): 45  
-Fiber (g): 17  
-Sugar (g): 0  
-Protein (g): 6
-
-Food Name: Test Pina Colada  
-Date: 12/8
-Meal: Breakfast  
-Brand: Bouldin Acres  
-Icon: Mixed Drink  
-Serving Size: 28 fluid ounces (1 glass)  
-Calories: 400  
-Fat (g): 18  
-Saturated Fat (g): 14  
-Cholesterol (mg): 40  
-Sodium (mg): 75  
-Carbs (g): 50  
-Fiber (g): 0  
-Sugar (g): 46  
-Protein (g): 
-
-Food Name: Test Nachos w/Queso  
-Date: 12/7
-Meal: Lunch
-Brand: 
-Icon: Tortilla Chip  
-Serving Size: 1/2 each (shared)  
-Calories: 375  
-Fat (g): 23  
-Saturated Fat (g): 12  
-Cholesterol (mg): 40  
-Sodium (mg): 650  
-Carbs (g): 35  
-Fiber (g): 3  
-Sugar (g): 2  
-Protein (g): 9  
-
-Food Name: Test Nitro Espresso Martini  
-Date: 12/7
+Food Name: Five Golden Rings (Drink)  
+Date: 12/14  
 Meal: Dinner  
-Brand: Homemade
+Brand: Jingle Jangle  
 Icon: Mixed Drink  
-Serving Size: 4.5 fluid ounces (1 glass)  
-Calories: 210  
+Serving Size: 8 fluid ounces  
+Calories: 240  
+Fat (g): 4  
+Saturated Fat (g): 2  
+Cholesterol (mg): 0  
+Sodium (mg): 10  
+Carbs (g): 25  
+Fiber (g): 2  
+Sugar (g): 18  
+Protein (g): 2  
+
+Food Name: Table Popcorn  
+Date: 12/14  
+Meal: Dinner  
+Brand: The Dead Rabbit  
+Icon: Popcorn  
+Serving Size: 3/4 bowl (estimated 2 cups)  
+Calories: 180  
+Fat (g): 12  
+Saturated Fat (g): 7  
+Cholesterol (mg): 20  
+Sodium (mg): 200  
+Carbs (g): 16  
+Fiber (g): 3  
+Sugar (g): 0  
+Protein (g): 3  
+
+Food Name: Sausage Roll  
+Date: 12/14  
+Meal: Dinner  
+Brand: The Dead Rabbit  
+Icon: Sausage  
+Serving Size: 1 piece (small, pig-in-blanket size)  
+Calories: 150  
+Fat (g): 10  
+Saturated Fat (g): 4  
+Cholesterol (mg): 25  
+Sodium (mg): 300  
+Carbs (g): 9  
+Fiber (g): 0  
+Sugar (g): 1  
+Protein (g): 6  
+
+Food Name: Peppermint Candy Cane  
+Date: 12/14  
+Meal: Snacks  
+Brand: Miracle on 5th Street  
+Icon: Candy  
+Serving Size: 3 mini pieces  
+Calories: 90  
 Fat (g): 0  
 Saturated Fat (g): 0  
 Cholesterol (mg): 0  
-Sodium (mg): 5  
-Carbs (g): 10  
+Sodium (mg): 0  
+Carbs (g): 23  
 Fiber (g): 0  
-Sugar (g): 9  
-Protein (g): 0
+Sugar (g): 23  
+Protein (g): 0  
+
+Food Name: Spiced Hot Cocoa w/Shot  
+Date: 12/14  
+Meal: Snacks  
+Brand: Miracle on 5th Street  
+Icon: Hot Drink  
+Serving Size: 10 fluid ounces (including whipped cream)  
+Calories: 280  
+Fat (g): 10  
+Saturated Fat (g): 6  
+Cholesterol (mg): 25  
+Sodium (mg): 150  
+Carbs (g): 36  
+Fiber (g): 2  
+Sugar (g): 30  
+Protein (g): 6  
+
+Food Name: Santa Slide (2 Drinks)  
+Date: 12/14  
+Meal: Snacks  
+Brand: Miracle on 5th Street  
+Icon: Mixed Drink  
+Serving Size: 12 fluid ounces (6 each)  
+Calories: 400  
+Fat (g): 10  
+Saturated Fat (g): 6  
+Cholesterol (mg): 15  
+Sodium (mg): 80  
+Carbs (g): 40  
+Fiber (g): 0  
+Sugar (g): 36  
+Protein (g): 4  

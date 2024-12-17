@@ -142,7 +142,7 @@ def attempt_food_logging(driver, food_item):
         return False
 
     # Step 3: Enter placeholder text
-    placeholder_text = "t3stf00dd03sn0t3xist"
+    placeholder_text = "5e2YYQpf57Q1J7J3"
     if not enter_placeholder_text(driver, search_input, placeholder_text):
         logger.error("Failed to enter placeholder text.")
         return False
