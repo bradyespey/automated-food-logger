@@ -1,5 +1,5 @@
-Food Name: Cheeseburger w/Fries & Ketchup  
-Date: 12/21  
+Food Name: Test Cheeseburger w/Fries & Ketchup  
+Date: 12/20  
 Meal: Lunch  
 Brand: Champions Austin  
 Icon: Cheeseburger  
@@ -15,8 +15,8 @@ Sugar (g): 10
 Protein (g): 35
 
 
-Food Name: Blue Moon Beer  
-Date: 12/19  
+Food Name: Test Blue Moon Beer  
+Date: 12/20 
 Meal: Dinner  
 Brand: Blue Moon  
 Icon: Beer  
