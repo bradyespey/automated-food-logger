@@ -1,95 +1,32 @@
-Food Name: Five Golden Rings (Drink)  
-Date: 12/14  
-Meal: Dinner  
-Brand: Jingle Jangle  
-Icon: Mixed Drink  
-Serving Size: 8 fluid ounces  
-Calories: 240  
-Fat (g): 4  
-Saturated Fat (g): 2  
-Cholesterol (mg): 0  
-Sodium (mg): 10  
-Carbs (g): 25  
-Fiber (g): 2  
-Sugar (g): 18  
-Protein (g): 2  
+Food Name: Cheeseburger w/Fries & Ketchup  
+Date: 12/21  
+Meal: Lunch  
+Brand: Champions Austin  
+Icon: Cheeseburger  
+Serving Size: 1 serving  
+Calories: 980  
+Fat (g): 50  
+Saturated Fat (g): 18  
+Cholesterol (mg): 110  
+Sodium (mg): 1360  
+Carbs (g): 90  
+Fiber (g): 6  
+Sugar (g): 10  
+Protein (g): 35
 
-Food Name: Table Popcorn  
-Date: 12/14  
-Meal: Dinner  
-Brand: The Dead Rabbit  
-Icon: Popcorn  
-Serving Size: 3/4 bowl (estimated 2 cups)  
-Calories: 180  
-Fat (g): 12  
-Saturated Fat (g): 7  
-Cholesterol (mg): 20  
-Sodium (mg): 200  
-Carbs (g): 16  
-Fiber (g): 3  
-Sugar (g): 0  
-Protein (g): 3  
 
-Food Name: Sausage Roll  
-Date: 12/14  
+Food Name: Blue Moon Beer  
+Date: 12/19  
 Meal: Dinner  
-Brand: The Dead Rabbit  
-Icon: Sausage  
-Serving Size: 1 piece (small, pig-in-blanket size)  
-Calories: 150  
-Fat (g): 10  
-Saturated Fat (g): 4  
-Cholesterol (mg): 25  
-Sodium (mg): 300  
-Carbs (g): 9  
-Fiber (g): 0  
-Sugar (g): 1  
-Protein (g): 6  
-
-Food Name: Peppermint Candy Cane  
-Date: 12/14  
-Meal: Snacks  
-Brand: Miracle on 5th Street  
-Icon: Candy  
-Serving Size: 3 mini pieces  
-Calories: 90  
+Brand: Blue Moon  
+Icon: Beer  
+Serving Size: 16 fluid ounces (1 pint)  
+Calories: 220  
 Fat (g): 0  
 Saturated Fat (g): 0  
 Cholesterol (mg): 0  
-Sodium (mg): 0  
-Carbs (g): 23  
+Sodium (mg): 15  
+Carbs (g): 17  
 Fiber (g): 0  
-Sugar (g): 23  
-Protein (g): 0  
-
-Food Name: Spiced Hot Cocoa w/Shot  
-Date: 12/14  
-Meal: Snacks  
-Brand: Miracle on 5th Street  
-Icon: Hot Drink  
-Serving Size: 10 fluid ounces (including whipped cream)  
-Calories: 280  
-Fat (g): 10  
-Saturated Fat (g): 6  
-Cholesterol (mg): 25  
-Sodium (mg): 150  
-Carbs (g): 36  
-Fiber (g): 2  
-Sugar (g): 30  
-Protein (g): 6  
-
-Food Name: Santa Slide (2 Drinks)  
-Date: 12/14  
-Meal: Snacks  
-Brand: Miracle on 5th Street  
-Icon: Mixed Drink  
-Serving Size: 12 fluid ounces (6 each)  
-Calories: 400  
-Fat (g): 10  
-Saturated Fat (g): 6  
-Cholesterol (mg): 15  
-Sodium (mg): 80  
-Carbs (g): 40  
-Fiber (g): 0  
-Sugar (g): 36  
-Protein (g): 4  
+Sugar (g): 2  
+Protein (g): 2  

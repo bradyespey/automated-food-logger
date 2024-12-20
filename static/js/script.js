@@ -8,6 +8,9 @@ async function submitFoodLog() {
     const responseMessage = document.getElementById('response-message');
     responseMessage.innerHTML = '';
     const logText = document.getElementById('food-log-text').value;
+    
+    // Get the state of the Log Water toggle
+    const logWaterToggle = document.getElementById('log-water-toggle').checked;
 
     if (!logText.trim()) {
         responseMessage.innerHTML = '<span style="color: red;">Please enter your food log.</span>';
@@ -20,7 +23,7 @@ async function submitFoodLog() {
         const response = await fetch('/foodlog/submit-log', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ log: logText })
+            body: JSON.stringify({ log: logText, log_water: logWaterToggle })
         });
 
         const contentType = response.headers.get("content-type");

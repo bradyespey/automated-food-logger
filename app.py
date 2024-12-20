@@ -47,6 +47,7 @@ google = oauth.register(
     }
 )
 
+# Ensure user is authenticated
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -103,6 +104,7 @@ if not os.path.exists(EXAMPLE_FILE):
     with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
         f.write("Sample food log content.\nYou can modify this file at runtime, but changes won't persist after a dyno restart.\n")
 
+# Save log to file
 def save_log_to_file(log_text):
     try:
         with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
@@ -139,24 +141,28 @@ def save_log():
 @requires_auth
 def submit_log():
     data = request.json
-    log_text = data.get('log')
+    log_text = data.get('log', '')
+    log_water = data.get('log_water', True)  # Get toggle state from request
+
     logger.debug(f"Received log text: {log_text}")
+    logger.debug(f"Log water flag: {log_water}")
 
     if log_text:
         try:
-            output = process_log(log_text)
+            # Pass log_water to process_log so it can skip water logging if False
+            output = process_log(log_text, log_water)
             logger.info("Log processed successfully.")
             success = save_log_to_file(log_text)
             if not success:
                 logger.error("Failed to save the log after processing.")
                 return jsonify({"error": "Failed to save log."}), 500
-            return jsonify(output=output), 200
+            return jsonify({"output": output}), 200
         except Exception as e:
             logger.error(f"Processing failed: {e}", exc_info=True)
-            return jsonify(output=f"Processing failed: {e}"), 500
+            return jsonify({"output": f"Processing failed: {e}"}), 500
     else:
         logger.error("No log text provided.")
-        return jsonify(output="No log text provided."), 400
+        return jsonify({"output": "No log text provided."}), 400
 
 @app.route('/debug/env')
 @requires_auth

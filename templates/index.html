@@ -8,7 +8,7 @@
     <title>Food Log</title>
     <link rel="stylesheet" href="/static/css/styles.css" />
     <link rel="icon" href="/static/images/loseit_icon.png" type="image/png" />
-</head>
+</head>ß
 
 <body>
     <div class="navbar">
@@ -20,6 +20,16 @@
         <div class="nav-buttons">
             <button onclick="submitFoodLog()">Log Food</button>
             <button onclick="clearLog()">Clear</button>
+            
+            <!-- Log Water Toggle Button -->
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" id="log-water-toggle" checked>
+                    <span class="slider round"></span>
+                </label>
+                <span>Log Water</span>
+            </div>
+            
             <button onclick="loadExample()">Example</button>
             <button onclick="openFoodvisor()">Foodvisor</button>
             <button onclick="showHydrationCalculator()">Hydration Calculator</button>

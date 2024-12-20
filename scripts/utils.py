@@ -4,14 +4,15 @@ import logging
 import os
 from selenium.webdriver.common.by import By
 import time
+import re
+from datetime import datetime
 
 # Ensure logs directory exists
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-# Configure logging
 logging.basicConfig(
-    level=logging.INFO,  # Change to DEBUG for more detailed logs
+    level=logging.INFO,  # Change to DEBUG for more detailed logs if needed
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
@@ -20,21 +21,37 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Parse food items from log text
-def parse_food_items(log_text):
+# Parse food items from log text (original logic, just adding log_water)
+def parse_food_items(log_text, log_water=True):
     food_items = []
     current_food = {}
     for line in log_text.strip().splitlines():
         line = line.strip()
         if not line:
             if current_food:
+                current_food['log_water'] = log_water
+                # Extract fluid_ounces if serving size includes fluid ounces
+                serving_size = current_food.get('Serving Size', '').lower()
+                if 'fluid ounce' in serving_size:
+                    fluid_oz_matches = re.findall(r"(\d+\.?\d*)\s*fluid ounce", serving_size)
+                    if fluid_oz_matches:
+                        total_fluid_oz = sum(float(m) for m in fluid_oz_matches)
+                        current_food['fluid_ounces'] = total_fluid_oz
                 food_items.append(current_food)
                 current_food = {}
             continue
         if ': ' in line:
             key, value = line.split(': ', 1)
             current_food[key.strip()] = value.strip()
+
     if current_food:
+        current_food['log_water'] = log_water
+        serving_size = current_food.get('Serving Size', '').lower()
+        if 'fluid ounce' in serving_size:
+            fluid_oz_matches = re.findall(r"(\d+\.?\d*)\s*fluid ounce", serving_size)
+            if fluid_oz_matches:
+                total_fluid_oz = sum(float(m) for m in fluid_oz_matches)
+                current_food['fluid_ounces'] = total_fluid_oz
         food_items.append(current_food)
     return food_items
 
@@ -76,8 +93,6 @@ def compare_values(field_name, input_value, logged_value):
 # Compare lists of food items and generate HTML report
 def compare_items(input_items, logged_items):
     comparison = ""
-    # We'll assume that logged_items correspond to input_items in order.
-    # If needed, you can match them by "Food Name" as before.
     for idx, input_item in enumerate(input_items, 1):
         comparison += f"<b>Verifying item {idx} of {len(input_items)}: {input_item.get('Food Name', '')}</b><br>"
 
@@ -116,7 +131,6 @@ def compare_items(input_items, logged_items):
 # Close overlays or popups
 def close_overlays(driver):
     try:
-        # Common overlay selectors; adjust based on actual overlays
         overlay_selectors = [
             "//div[@role='button' and @title='Close']",
             "//button[contains(text(), 'Close')]",
@@ -128,7 +142,7 @@ def close_overlays(driver):
                 try:
                     btn.click()
                     logger.info("Closed an overlay or popup.")
-                    time.sleep(1)  # Allow time for the overlay to close
+                    time.sleep(1)
                 except Exception as e:
                     logger.error(f"Failed to click overlay close button: {e}")
     except Exception as e:
