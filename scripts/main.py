@@ -22,13 +22,13 @@ from scripts.navigation import (
     close_overlays,
     select_search_box,
     enter_placeholder_text,
-    click_create_custom_food
+    click_create_custom_food,
+    goto_initial_position  # Import the new helper
 )
 from scripts.food_entry import enter_food_details, save_food
 from scripts.water_intake import update_water_intake
 from scripts.utils import parse_food_items, compare_items, logger
 
-# Processes the provided food log text, logs each food item, updates water intake
 def main(log_text, log_water=True):
     driver = initialize_driver(headless=HEADLESS_MODE)
     output_messages = []
@@ -43,7 +43,6 @@ def main(log_text, log_water=True):
             output_messages.append("<span style='color: red;'>Login verification failed.</span>")
             return "<br>".join(output_messages)
 
-        # Parse items with original logic, just adding log_water
         food_items = parse_food_items(log_text, log_water=log_water)
         num_items = len(food_items)
         logger.info(f"Parsed {num_items} food items.")
@@ -58,7 +57,7 @@ def main(log_text, log_water=True):
 
             success = attempt_food_logging(driver, food_item)
             if not success:
-                # Refresh and try again from scratch
+                # Refresh and try again
                 driver.refresh()
                 time.sleep(3)
                 success = attempt_food_logging(driver, food_item)
@@ -86,7 +85,6 @@ def main(log_text, log_water=True):
         driver.quit()
         logger.info("WebDriver closed.")
 
-# Log single food item from scratch
 def attempt_food_logging(driver, food_item):
     date_str = food_item.get("Date")
     if not date_str:
@@ -100,6 +98,9 @@ def attempt_food_logging(driver, food_item):
     if not navigate_to_date(driver, target_date):
         logger.error(f"Failed to navigate to {target_date}.")
         return False
+
+    # ALWAYS move cursor to the initial "Breakfast" position first
+    goto_initial_position(driver)
 
     meal_name = food_item.get("Meal", "Dinner")
     search_input = select_search_box(driver, meal_name)
@@ -126,7 +127,6 @@ def attempt_food_logging(driver, food_item):
 
     close_overlays(driver)
 
-    # Log water intake only if log_water is True and fluid ounces exist
     if food_item.get('fluid_ounces') and food_item.get('log_water', True):
         try:
             days_difference_calculation = (target_date - date.today()).days

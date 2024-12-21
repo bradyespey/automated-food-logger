@@ -41,7 +41,6 @@ def parse_food_item_date(date_str):
 
 def close_overlays(driver):
     try:
-        # Common overlay selectors; adjust based on actual overlays
         overlay_selectors = [
             "//div[@role='button' and @title='Close']",
             "//button[contains(text(), 'Close')]",
@@ -98,6 +97,22 @@ def navigate_to_date(driver, target_date):
 
     logger.error(f"Failed to navigate to target date {target_date} after {max_attempts} attempts.")
     return False
+
+def goto_initial_position(driver):
+    """
+    Always go to the breakfast search box (tabindex='200') first, 
+    ensuring the cursor is at a known baseline position before selecting any meal box.
+    """
+    logger.info("Moving cursor to the initial 'Breakfast' search box (tabindex=200).")
+    try:
+        breakfast_xpath = "//input[@tabindex='200']"
+        breakfast_input = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, breakfast_xpath))
+        )
+        breakfast_input.click()
+        logger.info("Cursor moved to the initial position (Breakfast box).")
+    except Exception as e:
+        logger.warning(f"Could not move cursor to the initial position: {e}")
 
 def select_search_box(driver, meal_name):
     try:

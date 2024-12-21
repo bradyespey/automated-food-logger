@@ -1,32 +1,63 @@
-Food Name: Test Cheeseburger w/Fries & Ketchup  
-Date: 12/20  
-Meal: Lunch  
-Brand: Champions Austin  
-Icon: Cheeseburger  
-Serving Size: 1 serving  
-Calories: 980  
-Fat (g): 50  
-Saturated Fat (g): 18  
-Cholesterol (mg): 110  
-Sodium (mg): 1360  
-Carbs (g): 90  
-Fiber (g): 6  
-Sugar (g): 10  
-Protein (g): 35
-
-
-Food Name: Test Blue Moon Beer  
-Date: 12/20 
-Meal: Dinner  
-Brand: Blue Moon  
+Food Name: Test Modelo Beer 2
+Date: 12/20
+Meal: Snacks
+Brand: Modelo
 Icon: Beer  
-Serving Size: 16 fluid ounces (1 pint)  
-Calories: 220  
+Serving Size: 12 fluid ounces
+Calories: 600  
+Fat (g): 2 
+Saturated Fat (g): 3.5  
+Cholesterol (mg): 4.25  
+Sodium (mg): 45  
+Carbs (g): 45  
+Fiber (g): 17  
+Sugar (g): 0  
+Protein (g): 6
+
+Food Name: Test Pina Colada 2
+Date: 12/20
+Meal: Breakfast  
+Brand: Bouldin Acres  
+Icon: Mixed Drink  
+Serving Size: 28 fluid ounces (1 glass)  
+Calories: 400  
+Fat (g): 18  
+Saturated Fat (g): 14  
+Cholesterol (mg): 40  
+Sodium (mg): 75  
+Carbs (g): 50  
+Fiber (g): 0  
+Sugar (g): 46  
+Protein (g): 
+
+Food Name: Test Nachos w/Queso 2
+Date: 12/19
+Meal: Lunch
+Brand: 
+Icon: Tortilla Chip  
+Serving Size: 1/2 each (shared)  
+Calories: 375  
+Fat (g): 23  
+Saturated Fat (g): 12  
+Cholesterol (mg): 40  
+Sodium (mg): 650  
+Carbs (g): 35  
+Fiber (g): 3  
+Sugar (g): 2  
+Protein (g): 9  
+
+Food Name: Test Nitro Espresso Martini 2
+Date: 12/19
+Meal: Dinner  
+Brand: Homemade
+Icon: Mixed Drink  
+Serving Size: 4.5 fluid ounces (1 glass)  
+Calories: 210  
 Fat (g): 0  
 Saturated Fat (g): 0  
 Cholesterol (mg): 0  
-Sodium (mg): 15  
-Carbs (g): 17  
+Sodium (mg): 5  
+Carbs (g): 10  
 Fiber (g): 0  
-Sugar (g): 2  
-Protein (g): 2  
+Sugar (g): 9  
+Protein (g): 0
