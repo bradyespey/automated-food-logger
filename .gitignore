@@ -121,5 +121,6 @@ logs/
 loseit_cookies.json
 api_credentials.json
 
-# Old files
+# Old and other files
 old/
+other/
