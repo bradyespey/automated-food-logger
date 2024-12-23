@@ -74,7 +74,9 @@ def home():
 
 @app.route('/foodlog/login')
 def login_route():
-    redirect_uri = url_for('authorize', _external=True)
+    # Dynamically detect redirect URI based on the host
+    host = request.host_url.rstrip('/')
+    redirect_uri = f"{host}/foodlog/oauth2callback"
     nonce = secrets.token_urlsafe(16)
     session['nonce'] = nonce
     logger.info(f"Generated redirect URI: {redirect_uri}")
