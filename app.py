@@ -1,5 +1,3 @@
-# app.py
-
 import os
 import secrets
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template, Response
@@ -12,6 +10,7 @@ from scripts.main import main as process_log
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
+# Sentry setup
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
     integrations=[FlaskIntegration()],
@@ -24,13 +23,16 @@ load_dotenv(os.path.join(basedir, '.env'))
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key')
 
+# Fix proxy headers for Cloudflare/Heroku
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+# Logging setup
 env = os.getenv('ENV', 'dev')
 logging_level = logging.DEBUG if env == 'dev' else logging.INFO
 logging.basicConfig(level=logging_level)
 logger = logging.getLogger(__name__)
 
+# OAuth setup
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
@@ -47,7 +49,7 @@ google = oauth.register(
     }
 )
 
-# Ensure user is authenticated
+# Authentication decorator
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -66,6 +68,7 @@ def login_route():
     redirect_uri = url_for('authorize', _external=True)
     nonce = secrets.token_urlsafe(16)
     session['nonce'] = nonce
+    logger.info(f"Generated redirect URI: {redirect_uri}")
     logger.info("Initiating OAuth flow.")
     return google.authorize_redirect(redirect_uri, nonce=nonce)
 
@@ -94,6 +97,7 @@ def foodlog():
     logger.info("Serving main application page.")
     return render_template('index.html')
 
+# Example directory and file setup
 EXAMPLE_DIR = os.path.join(basedir, 'txt')
 EXAMPLE_FILE = os.path.join(EXAMPLE_DIR, 'nutritional_data.txt')
 
@@ -142,15 +146,11 @@ def save_log():
 def submit_log():
     data = request.json
     log_text = data.get('log', '')
-    log_water = data.get('log_water', True)  # Get toggle state from request
-
     logger.debug(f"Received log text: {log_text}")
-    logger.debug(f"Log water flag: {log_water}")
 
     if log_text:
         try:
-            # Pass log_water to process_log so it can skip water logging if False
-            output = process_log(log_text, log_water)
+            output = process_log(log_text)
             logger.info("Log processed successfully.")
             success = save_log_to_file(log_text)
             if not success:
@@ -163,13 +163,6 @@ def submit_log():
     else:
         logger.error("No log text provided.")
         return jsonify({"output": "No log text provided."}), 400
-
-@app.route('/debug/env')
-@requires_auth
-def debug_env():
-    chrome_shim = os.getenv("GOOGLE_CHROME_SHIM")
-    chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
-    return Response(f"GOOGLE_CHROME_SHIM: {chrome_shim}\nCHROMEDRIVER_PATH: {chromedriver_path}", mimetype='text/plain')
 
 @app.errorhandler(500)
 def internal_error(error):
