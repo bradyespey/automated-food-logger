@@ -1,39 +1,31 @@
 import os
 import secrets
-from flask import Flask, redirect, url_for, session, request, jsonify, render_template
+from flask import Flask, redirect, url_for, session, request, jsonify, render_template, Response
+from flask_session import Session
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask_session import Session
 import logging
 from dotenv import load_dotenv
 from scripts.main import main as process_log
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-# Initialize Sentry
+# Initialize Sentry for error tracking
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
     integrations=[FlaskIntegration()],
     traces_sample_rate=1.0,
 )
 
-# Load environment variables
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
-# Flask application setup
+# Flask app setup
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key')
 
-# Flask-Session configuration
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_FILE_DIR'] = os.path.join(basedir, 'flask_session')
-app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_USE_SIGNER'] = True
-Session(app)
-
-# Proxy fix for Heroku and Cloudflare
+# Fix proxy headers for Cloudflare/Heroku
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Logging setup
@@ -41,6 +33,13 @@ env = os.getenv('ENV', 'dev')
 logging_level = logging.DEBUG if env == 'dev' else logging.INFO
 logging.basicConfig(level=logging_level)
 logger = logging.getLogger(__name__)
+
+# Flask-Session configuration
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = os.path.join(basedir, 'flask_session')
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+Session(app)
 
 # OAuth setup
 oauth = OAuth(app)
@@ -107,7 +106,7 @@ def foodlog():
     logger.info("Serving main application page.")
     return render_template('index.html')
 
-# File handling
+# Example directory and file setup
 EXAMPLE_DIR = os.path.join(basedir, 'txt')
 EXAMPLE_FILE = os.path.join(EXAMPLE_DIR, 'nutritional_data.txt')
 
@@ -185,4 +184,4 @@ def unhandled_exception(e):
     return "Internal Server Error", 500
 
 if __name__ == "__main__":
-    app.run(debug=(env == 'dev'))
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=(env == 'dev'))
