@@ -1,36 +1,62 @@
 import os
 import secrets
+import logging
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template, Response
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
 from werkzeug.middleware.proxy_fix import ProxyFix
-import logging
 from dotenv import load_dotenv
-from scripts.main import main as process_log
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-# Initialize Sentry for error tracking
+# Import your main Selenium script
+from scripts.main import main as process_log
+
+# -----------------------------------------------------------------------------
+# Load Environment
+# -----------------------------------------------------------------------------
+basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.env'))
+
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
     integrations=[FlaskIntegration()],
     traces_sample_rate=1.0,
 )
 
-basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(basedir, '.env'))
-
 app = Flask(__name__, static_folder='static', template_folder='templates')
-app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key')
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key')
 
-# Fix proxy headers for Cloudflare/Heroku
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-
-env = os.getenv('ENV', 'dev')
-logging_level = logging.DEBUG if env == 'dev' else logging.INFO
+# -----------------------------------------------------------------------------
+# Environment-specific configs
+#   ENV might be "dev", "heroku", or "production"
+# -----------------------------------------------------------------------------
+ENV = os.getenv("ENV", "dev").lower()
+logging_level = logging.DEBUG if ENV == "dev" else logging.INFO
 logging.basicConfig(level=logging_level)
 logger = logging.getLogger(__name__)
 
+# Fix proxy headers (Cloudflare/Heroku)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+# If on production (theespeys.com domain), set cookie for cross-site usage
+if ENV == "production":
+    app.config["SESSION_COOKIE_SAMESITE"] = "None"
+    app.config["SESSION_COOKIE_SECURE"] = True
+    # You can also do domain-based cookies if you want, but it can break other uses.
+    # e.g. app.config["SESSION_COOKIE_DOMAIN"] = "theespeys.com"
+elif ENV == "heroku":
+    # Optionally do the same as production or just skip.
+    # If you skip, then the session cookie is domain = herokuapp.com
+    # which is fine for direct Heroku usage.
+    pass
+else:
+    # dev environment => local testing => no extra session config
+    pass
+
+# -----------------------------------------------------------------------------
+# Configure Authlib / Google OAuth
+# -----------------------------------------------------------------------------
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
@@ -47,7 +73,6 @@ google = oauth.register(
     }
 )
 
-# Ensure user is authenticated
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -57,37 +82,63 @@ def requires_auth(f):
         return f(*args, **kwargs)
     return decorated
 
+# -----------------------------------------------------------------------------
+# Environment-specific callback
+# -----------------------------------------------------------------------------
+def get_oauth_callback():
+    """
+    Returns the correct Google OAuth callback URL depending on ENV.
+    If you prefer to rely on Flask's `url_for('authorize', _external=True)`, 
+    you MUST ensure your SERVER_NAME or external URL is accurate. 
+    But since we have 3 separate domains, let's just hard-code:
+    """
+    if ENV == "production":
+        # Production = theespeys.com
+        return "https://theespeys.com/foodlog/oauth2callback"
+    elif ENV == "heroku":
+        # Heroku
+        return "https://foodlogging-459c6f270ab7.herokuapp.com/foodlog/oauth2callback"
+    else:
+        # Dev
+        return "http://localhost:5001/foodlog/oauth2callback"
+
+# -----------------------------------------------------------------------------
+# Routes
+# -----------------------------------------------------------------------------
 @app.route('/')
 def home():
     return redirect(url_for('foodlog'))
 
 @app.route('/foodlog/login')
 def login_route():
-    redirect_uri = url_for('authorize', _external=True)
+    redirect_uri = get_oauth_callback()
     nonce = secrets.token_urlsafe(16)
     session['nonce'] = nonce
     logger.info(f"Generated nonce: {nonce}")
-    logger.info("Initiating OAuth flow.")
+    logger.info(f"Initiating OAuth flow. Redirect URI = {redirect_uri}")
     return google.authorize_redirect(redirect_uri, nonce=nonce)
 
 @app.route('/foodlog/oauth2callback')
 def authorize():
     try:
+        # Exchange code for token
         token = google.authorize_access_token()
-        # Parse token nonce to verify
-        token_nonce = token.get('nonce', None)
-        session_nonce = session.pop('nonce', None)
 
-        # Debug nonce values
+        # Check/parse token
+        token_nonce = token.get('nonce')
+        session_nonce = session.pop('nonce', None)  # remove from session after reading
         logger.debug(f"Session nonce: {session_nonce}, Token nonce: {token_nonce}")
 
+        # If token includes a nonce, verify it
         if token_nonce and session_nonce != token_nonce:
             logger.error("Nonce mismatch detected.")
             raise ValueError("Nonce mismatch detected.")
 
+        # Parse user info from ID token
         user_info = google.parse_id_token(token, nonce=session_nonce)
         session['user'] = user_info
         logger.info(f"User authenticated: {user_info}")
+
         return redirect(url_for('foodlog'))
     except Exception as e:
         logger.error(f"OAuth authorization failed: {e}", exc_info=True)
@@ -105,6 +156,9 @@ def foodlog():
     logger.info("Serving main application page.")
     return render_template('index.html')
 
+# -----------------------------------------------------------------------------
+# Example Log Management
+# -----------------------------------------------------------------------------
 EXAMPLE_DIR = os.path.join(basedir, 'txt')
 EXAMPLE_FILE = os.path.join(EXAMPLE_DIR, 'nutritional_data.txt')
 
@@ -113,9 +167,8 @@ if not os.path.exists(EXAMPLE_DIR):
 
 if not os.path.exists(EXAMPLE_FILE):
     with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
-        f.write("Sample food log content.\nYou can modify this file at runtime, but changes won't persist after a dyno restart.\n")
+        f.write("Sample food log content.\nYou can modify this file at runtime...")
 
-# Save log to file
 def save_log_to_file(log_text):
     try:
         with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
@@ -153,14 +206,13 @@ def save_log():
 def submit_log():
     data = request.json
     log_text = data.get('log', '')
-    log_water = data.get('log_water', True)  # Get toggle state from request
+    log_water = data.get('log_water', True)  # from frontend toggle
 
     logger.debug(f"Received log text: {log_text}")
     logger.debug(f"Log water flag: {log_water}")
 
     if log_text:
         try:
-            # Pass log_water to process_log so it can skip water logging if False
             output = process_log(log_text, log_water)
             logger.info("Log processed successfully.")
             success = save_log_to_file(log_text)
@@ -180,8 +232,14 @@ def submit_log():
 def debug_env():
     chrome_shim = os.getenv("GOOGLE_CHROME_SHIM")
     chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
-    return Response(f"GOOGLE_CHROME_SHIM: {chrome_shim}\nCHROMEDRIVER_PATH: {chromedriver_path}", mimetype='text/plain')
+    return Response(
+        f"ENV: {ENV}\nGOOGLE_CHROME_SHIM: {chrome_shim}\nCHROMEDRIVER_PATH: {chromedriver_path}",
+        mimetype='text/plain'
+    )
 
+# -----------------------------------------------------------------------------
+# Error Handlers
+# -----------------------------------------------------------------------------
 @app.errorhandler(500)
 def internal_error(error):
     logger.error(f"Internal server error: {error}", exc_info=True)
@@ -193,4 +251,5 @@ def unhandled_exception(e):
     return "Internal Server Error", 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=(env == 'dev'))
+    # For local dev usage, run on port 5001, or adjust as you see fit
+    app.run(host="0.0.0.0", port=5001, debug=(ENV == 'dev'))
