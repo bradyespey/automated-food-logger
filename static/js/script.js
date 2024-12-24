@@ -5,155 +5,165 @@ async function submitFoodLog() {
     const spinner = document.getElementById('spinner');
     const responseMessage = document.getElementById('response-message');
     const logText = document.getElementById('food-log-text').value;
-    const logWaterToggle = document.getElementById('log-water-toggle') ? document.getElementById('log-water-toggle').checked : true;
-
+    const logWaterToggle = document.getElementById('log-water-toggle') 
+      ? document.getElementById('log-water-toggle').checked 
+      : true;
+  
     if (logButton) {
-        logButton.textContent = 'Logging...';
-        logButton.disabled = true;
+      logButton.textContent = 'Logging...';
+      logButton.disabled = true;
     }
     if (spinner) {
-        spinner.style.display = 'inline-block';
+      spinner.style.display = 'inline-block';
     }
     if (responseMessage) {
-        responseMessage.innerHTML = '';
+      responseMessage.innerHTML = '';
     }
-
+  
     if (!logText.trim()) {
-        if (responseMessage) {
-            responseMessage.innerHTML = '<span style="color: red;">Please enter your food log.</span>';
-        }
-        if (logButton) {
-            logButton.textContent = 'Log Food';
-            logButton.disabled = false;
-        }
-        if (spinner) {
-            spinner.style.display = 'none';
-        }
-        return;
+      if (responseMessage) {
+        responseMessage.innerHTML = '<span style="color: red;">Please enter your food log.</span>';
+      }
+      if (logButton) {
+        logButton.textContent = 'Log Food';
+        logButton.disabled = false;
+      }
+      if (spinner) {
+        spinner.style.display = 'none';
+      }
+      return;
     }
-
+  
     try {
-        const response = await fetch('/foodlog/submit-log', {
+      const response = await fetch('/foodlog/submit-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({ log: logText, log_water: logWaterToggle })
+      });
+  
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        if (data.output) {
+          if (responseMessage) {
+            responseMessage.innerHTML = data.output;
+          }
+  
+          await fetch('/foodlog/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             cache: 'no-store',
-            body: JSON.stringify({ log: logText, log_water: logWaterToggle })
-        });
-
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-            const data = await response.json();
-            if (data.output) {
-                if (responseMessage) {
-                    responseMessage.innerHTML = data.output;
-                }
-
-                await fetch('/foodlog/save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    cache: 'no-store',
-                    body: JSON.stringify({ log: logText })
-                });
-            } else {
-                if (responseMessage) {
-                    responseMessage.innerHTML = '<span style="color: red;">Unexpected response from server.</span>';
-                }
-            }
+            body: JSON.stringify({ log: logText })
+          });
         } else {
-            const errorText = await response.text();
-            if (responseMessage) {
-                responseMessage.innerHTML = `<span style="color: red;">Error: Received unexpected response: ${errorText}</span>`;
-            }
+          if (responseMessage) {
+            responseMessage.innerHTML = '<span style="color: red;">Unexpected response from server.</span>';
+          }
         }
-    } catch (error) {
+      } else {
+        const errorText = await response.text();
         if (responseMessage) {
-            responseMessage.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
+          responseMessage.innerHTML = `<span style="color: red;">Error: Received unexpected response: ${errorText}</span>`;
         }
+      }
+    } catch (error) {
+      if (responseMessage) {
+        responseMessage.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
+      }
     } finally {
-        if (logButton) {
-            logButton.textContent = 'Log Food';
-            logButton.disabled = false;
-        }
-        if (spinner) {
-            spinner.style.display = 'none';
-        }
+      if (logButton) {
+        logButton.textContent = 'Log Food';
+        logButton.disabled = false;
+      }
+      if (spinner) {
+        spinner.style.display = 'none';
+      }
     }
-}
-
-function clearLog() {
+  }
+  
+  function clearLog() {
     const foodLogText = document.getElementById("food-log-text");
     if (foodLogText) {
-        foodLogText.value = "";
+      foodLogText.value = "";
     }
     const responseMessage = document.getElementById("response-message");
     if (responseMessage) {
-        responseMessage.innerHTML = "";
+      responseMessage.innerHTML = "";
     }
-}
-
-function copyOutput() {
+  }
+  
+  function copyOutput() {
     const responseMessage = document.getElementById('response-message');
     if (responseMessage) {
-        const text = responseMessage.innerText;
-        navigator.clipboard.writeText(text).then(() => {
-            const copyButton = document.querySelector('.nav-buttons button:nth-child(6)');
-            if (copyButton) {
-                copyButton.textContent = 'Copied!';
-                setTimeout(() => {
-                    copyButton.textContent = 'Copy Output';
-                }, 2000);
-            }
-        });
+      const text = responseMessage.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const copyButton = document.querySelector('.nav-buttons button:nth-child(6)');
+        if (copyButton) {
+          copyButton.textContent = 'Copied!';
+          setTimeout(() => {
+            copyButton.textContent = 'Copy Output';
+          }, 2000);
+        }
+      });
     }
-}
-
-function showHydrationCalculator() {
+  }
+  
+  function showHydrationCalculator() {
     const foodLogSection = document.getElementById('food-log-section');
     const hydrationCalculatorSection = document.getElementById('hydration-calculator-section');
     if (foodLogSection && hydrationCalculatorSection) {
-        foodLogSection.style.display = 'none';
-        hydrationCalculatorSection.style.display = 'flex';
+      foodLogSection.style.display = 'none';
+      hydrationCalculatorSection.style.display = 'flex';
     }
-}
-
-function calculateHydration() {
+  }
+  
+  function calculateHydration() {
     const hydrationTypeElement = document.getElementById('hydration-type');
     const hydrationAmountElement = document.getElementById('hydration-amount');
     const hydrationResult = document.getElementById('hydration-result');
-
+  
     if (!hydrationTypeElement || !hydrationAmountElement || !hydrationResult) {
-        return;
+      return;
     }
-
+  
     const hydrationType = parseFloat(hydrationTypeElement.value);
     const hydrationAmount = parseFloat(hydrationAmountElement.value);
-
+  
     if (isNaN(hydrationAmount) || hydrationAmount <= 0) {
-        hydrationResult.textContent = "Please enter a valid amount.";
-        return;
+      hydrationResult.textContent = "Please enter a valid amount.";
+      return;
     }
-
+  
     const hydrationValue = hydrationType * hydrationAmount;
     hydrationResult.textContent = `Hydration Value: ${hydrationValue.toFixed(2)} fl oz`;
-}
-
-function openFoodvisor() {
+  }
+  
+  function openFoodvisor() {
     window.open('https://www.foodvisor.io/en/vision/#demo', '_blank');
-}
-
-async function loadExample() {
+  }
+  
+  async function loadExample() {
     try {
-        const response = await fetch('/foodlog/example', { cache: 'no-store' });
-        if (response.ok) {
-            const text = await response.text();
-            const foodLogText = document.getElementById('food-log-text');
-            if (foodLogText) {
-                foodLogText.value = text;
-            }
-        } else {
-            alert("Failed to load example");
+      const response = await fetch('/foodlog/example', { cache: 'no-store' });
+      if (response.ok) {
+        const text = await response.text();
+        const foodLogText = document.getElementById('food-log-text');
+        if (foodLogText) {
+          foodLogText.value = text;
         }
+      } else {
+        alert("Failed to load example");
+      }
     } catch (error) {
-        alert("Error loading example: " + error.message);
+      alert("Error loading example: " + error.message);
     }
-}
+  }
+  
+  // NEW: Logout user
+  function logoutUser() {
+    // This simply navigates to /foodlog/logout
+    // which will clear the session and redirect back to the login screen
+    window.location.href = '/foodlog/logout';
+  }
+  

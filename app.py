@@ -27,12 +27,19 @@ sentry_sdk.init(
     traces_sample_rate=1.0,
 )
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
+# -----------------------------------------------------------------------------
+# Flask App Initialization
+# -----------------------------------------------------------------------------
+app = Flask(
+    __name__,
+    static_folder='static',
+    static_url_path='/foodlog/static',  # Serve static files under /foodlog/static
+    template_folder='templates'
+)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key')
 
 # -----------------------------------------------------------------------------
-# Environment-specific configs
-#   ENV might be "dev" or "production"
+# Environment-specific Configurations
 # -----------------------------------------------------------------------------
 ENV = os.getenv("ENV", "dev").lower()
 logging_level = logging.DEBUG if ENV == "dev" else logging.INFO
@@ -43,16 +50,10 @@ logger = logging.getLogger(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure session cookie settings based on environment
-if ENV == "production":
+if ENV == "production" or ENV == "heroku":
     app.config["SESSION_COOKIE_SAMESITE"] = "None"
     app.config["SESSION_COOKIE_SECURE"] = True
     # Optionally set the session cookie domain if needed
-    # app.config["SESSION_COOKIE_DOMAIN"] = ".theespeys.com"
-elif ENV == "heroku":
-    # Optionally set similar settings for Heroku if needed
-    # For simplicity, treat Heroku as production
-    app.config["SESSION_COOKIE_SAMESITE"] = "None"
-    app.config["SESSION_COOKIE_SECURE"] = True
     # app.config["SESSION_COOKIE_DOMAIN"] = ".theespeys.com"
 else:
     # Development environment => local testing
@@ -106,6 +107,15 @@ def get_oauth_callback():
     else:
         # Dev
         return "http://localhost:5001/foodlog/oauth2callback"
+
+# -----------------------------------------------------------------------------
+# Optional: Enforce Production Domain
+# -----------------------------------------------------------------------------
+@app.before_request
+def enforce_production_domain():
+    if ENV == "production":
+        if request.host not in ["theespeys.com", "www.theespeys.com"]:
+            return redirect("https://theespeys.com/foodlog", code=301)
 
 # -----------------------------------------------------------------------------
 # Routes

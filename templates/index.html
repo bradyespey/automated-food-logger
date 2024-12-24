@@ -3,84 +3,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Food Log</title>
-    <link rel="stylesheet" href="/static/css/styles.css" />
-    <link rel="icon" href="/static/images/loseit_icon.png" type="image/png" />
-</head>ß
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Food Log</title>
+  
+  <!-- Use Flask's url_for for static assets -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <link rel="icon" href="{{ url_for('static', filename='images/loseit_icon.png') }}" type="image/png" />
+</head>
 
 <body>
-    <div class="navbar">
-        <div class="logo">
-            <a href="/foodlog">
-                <img src="/static/images/loseit_logo.png" alt="Lose It! Logo">
-            </a>
-        </div>
-        <div class="nav-buttons">
-            <button onclick="submitFoodLog()">Log Food</button>
-            <button onclick="clearLog()">Clear</button>
-            
-            <!-- Log Water Toggle Button -->
-            <div class="toggle-container">
-                <label class="switch">
-                    <input type="checkbox" id="log-water-toggle" checked>
-                    <span class="slider round"></span>
-                </label>
-                <span>Log Water</span>
-            </div>
-            
-            <button onclick="loadExample()">Example</button>
-            <button onclick="openFoodvisor()">Foodvisor</button>
-            <button onclick="showHydrationCalculator()">Hydration Calculator</button>
-            <button onclick="copyOutput()">Copy Output</button>
-        </div>
+  <div class="navbar">
+    <div class="logo">
+      <!-- Use url_for to load logo -->
+      <a href="/foodlog">
+        <img src="{{ url_for('static', filename='images/loseit_logo.png') }}" alt="Lose It! Logo">
+      </a>
     </div>
-
-    <div class="content-wrapper" id="food-log-section">
-        <div class="input-section">
-            <textarea id="food-log-text" rows="20" cols="50" placeholder="Paste your food log text here..."></textarea>
-        </div>
-        <div class="output-section">
-            <div id="response-message">
-                <div id="spinner"></div>
-            </div>
-        </div>
+    <div class="nav-buttons">
+      <button onclick="submitFoodLog()">Log Food</button>
+      <button onclick="clearLog()">Clear</button>
+      
+      <!-- Log Water Toggle Button -->
+      <div class="toggle-container">
+        <label class="switch">
+          <input type="checkbox" id="log-water-toggle" checked>
+          <span class="slider round"></span>
+        </label>
+        <span>Log Water</span>
+      </div>
+      
+      <button onclick="loadExample()">Example</button>
+      <button onclick="openFoodvisor()">Foodvisor</button>
+      <button onclick="showHydrationCalculator()">Hydration Calculator</button>
+      <button onclick="copyOutput()">Copy Output</button>
+      <!-- New Logout Button -->
+      <button onclick="logoutUser()">Logout</button>
     </div>
+  </div>
 
-    <div class="content-wrapper" id="hydration-calculator-section" style="display:none;">
-        <div class="input-section">
-            <h2>Hydration Calculator</h2>
-            <label for="hydration-type">Liquid Type:</label>
-            <select id="hydration-type">
-                <option value="1">Water</option>
-                <option value="0.9">Beer</option>
-                <option value="1">Carbonated Water</option>
-                <option value="1.2">Coconut Water</option>
-                <option value="0.9">Coffee</option>
-                <option value="1">Energy Drink</option>
-                <option value="1">Hot Chocolate</option>
-                <option value="1">Juice</option>
-                <option value="0.5">Liquor</option>
-                <option value="1.2">Milk</option>
-                <option value="1">Protein Shake</option>
-                <option value="1.1">Skim Milk</option>
-                <option value="1">Smoothie</option>
-                <option value="1">Soda</option>
-                <option value="1">Soup</option>
-                <option value="1.2">Sports Drink</option>
-                <option value="1">Tea</option>
-                <option value="0.8">Wine</option>
-            </select>
-            <br>
-            <label for="hydration-amount">Amount (fl oz):</label>
-            <input type="number" id="hydration-amount" placeholder="Enter fluid ounces">
-            <br>
-            <button onclick="calculateHydration()">Calculate Hydration</button>
-            <div id="hydration-result" class="heading"></div>
-        </div>
+  <div class="content-wrapper" id="food-log-section">
+    <div class="input-section">
+      <textarea id="food-log-text" rows="20" cols="50" placeholder="Paste your food log text here..."></textarea>
     </div>
+    <div class="output-section">
+      <div id="response-message">
+        <div id="spinner"></div>
+      </div>
+    </div>
+  </div>
 
-    <script src="/static/js/script.js"></script>
+  <div class="content-wrapper" id="hydration-calculator-section" style="display:none;">
+    <div class="input-section">
+      <h2>Hydration Calculator</h2>
+      <label for="hydration-type">Liquid Type:</label>
+      <select id="hydration-type">
+        <option value="1">Water</option>
+        <option value="0.9">Beer</option>
+        <option value="1">Carbonated Water</option>
+        <option value="1.2">Coconut Water</option>
+        <option value="0.9">Coffee</option>
+        <option value="1">Energy Drink</option>
+        <option value="1">Hot Chocolate</option>
+        <option value="1">Juice</option>
+        <option value="0.5">Liquor</option>
+        <option value="1.2">Milk</option>
+        <option value="1">Protein Shake</option>
+        <option value="1.1">Skim Milk</option>
+        <option value="1">Smoothie</option>
+        <option value="1">Soda</option>
+        <option value="1">Soup</option>
+        <option value="1.2">Sports Drink</option>
+        <option value="1">Tea</option>
+        <option value="0.8">Wine</option>
+      </select>
+      <br>
+      <label for="hydration-amount">Amount (fl oz):</label>
+      <input type="number" id="hydration-amount" placeholder="Enter fluid ounces">
+      <br>`
+      <button onclick="calculateHydration()">Calculate Hydration</button>
+      <div id="hydration-result" class="heading"></div>
+    </div>
+  </div>
+
+  <!-- Use url_for to load your main script -->
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
