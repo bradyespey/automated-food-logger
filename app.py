@@ -1,3 +1,5 @@
+# app.py
+
 import os
 import secrets
 import logging
@@ -18,6 +20,7 @@ from scripts.main import main as process_log
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
+# Initialize Sentry for error tracking
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
     integrations=[FlaskIntegration()],
@@ -29,7 +32,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key')
 
 # -----------------------------------------------------------------------------
 # Environment-specific configs
-#   ENV might be "dev", "heroku", or "production"
+#   ENV might be "dev" or "production"
 # -----------------------------------------------------------------------------
 ENV = os.getenv("ENV", "dev").lower()
 logging_level = logging.DEBUG if ENV == "dev" else logging.INFO
@@ -39,20 +42,22 @@ logger = logging.getLogger(__name__)
 # Fix proxy headers (Cloudflare/Heroku)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# If on production (theespeys.com domain), set cookie for cross-site usage
+# Configure session cookie settings based on environment
 if ENV == "production":
     app.config["SESSION_COOKIE_SAMESITE"] = "None"
     app.config["SESSION_COOKIE_SECURE"] = True
-    # You can also do domain-based cookies if you want, but it can break other uses.
-    # e.g. app.config["SESSION_COOKIE_DOMAIN"] = "theespeys.com"
+    # Optionally set the session cookie domain if needed
+    # app.config["SESSION_COOKIE_DOMAIN"] = ".theespeys.com"
 elif ENV == "heroku":
-    # Optionally do the same as production or just skip.
-    # If you skip, then the session cookie is domain = herokuapp.com
-    # which is fine for direct Heroku usage.
-    pass
+    # Optionally set similar settings for Heroku if needed
+    # For simplicity, treat Heroku as production
+    app.config["SESSION_COOKIE_SAMESITE"] = "None"
+    app.config["SESSION_COOKIE_SECURE"] = True
+    # app.config["SESSION_COOKIE_DOMAIN"] = ".theespeys.com"
 else:
-    # dev environment => local testing => no extra session config
-    pass
+    # Development environment => local testing
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = False
 
 # -----------------------------------------------------------------------------
 # Configure Authlib / Google OAuth
@@ -73,6 +78,9 @@ google = oauth.register(
     }
 )
 
+# -----------------------------------------------------------------------------
+# Authentication Decorator
+# -----------------------------------------------------------------------------
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -83,14 +91,11 @@ def requires_auth(f):
     return decorated
 
 # -----------------------------------------------------------------------------
-# Environment-specific callback
+# Dynamic OAuth Callback URI
 # -----------------------------------------------------------------------------
 def get_oauth_callback():
     """
     Returns the correct Google OAuth callback URL depending on ENV.
-    If you prefer to rely on Flask's `url_for('authorize', _external=True)`, 
-    you MUST ensure your SERVER_NAME or external URL is accurate. 
-    But since we have 3 separate domains, let's just hard-code:
     """
     if ENV == "production":
         # Production = theespeys.com
@@ -167,7 +172,7 @@ if not os.path.exists(EXAMPLE_DIR):
 
 if not os.path.exists(EXAMPLE_FILE):
     with open(EXAMPLE_FILE, 'w', encoding='utf-8') as f:
-        f.write("Sample food log content.\nYou can modify this file at runtime...")
+        f.write("Sample food log content.\nYou can modify this file at runtime, but changes won't persist after a dyno restart.\n")
 
 def save_log_to_file(log_text):
     try:
@@ -251,5 +256,5 @@ def unhandled_exception(e):
     return "Internal Server Error", 500
 
 if __name__ == "__main__":
-    # For local dev usage, run on port 5001, or adjust as you see fit
-    app.run(host="0.0.0.0", port=5001, debug=(ENV == 'dev'))
+    # For local dev usage, run on port 5001
+    app.run(host="0.0.0.0", port=int(os.getenv('PORT', 5001)), debug=(ENV == 'dev'))
