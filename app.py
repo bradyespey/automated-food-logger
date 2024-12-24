@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure session cookie settings based on environment
-if ENV == "production" or ENV == "heroku":
+if ENV in ["production", "heroku"]:
     app.config["SESSION_COOKIE_SAMESITE"] = "None"
     app.config["SESSION_COOKIE_SECURE"] = True
     # Optionally set the session cookie domain if needed
@@ -102,7 +102,7 @@ def get_oauth_callback():
         # Production = theespeys.com
         return "https://theespeys.com/foodlog/oauth2callback"
     elif ENV == "heroku":
-        # Heroku
+        # Heroku (if accessed directly, which ideally shouldn't happen)
         return "https://foodlogging-459c6f270ab7.herokuapp.com/foodlog/oauth2callback"
     else:
         # Dev
@@ -114,8 +114,11 @@ def get_oauth_callback():
 @app.before_request
 def enforce_production_domain():
     if ENV == "production":
+        # Ensure the request is coming from the correct domain
         if request.host not in ["theespeys.com", "www.theespeys.com"]:
-            return redirect("https://theespeys.com/foodlog", code=301)
+            # Avoid redirecting if already at the desired path
+            if request.path != "/foodlog":
+                return redirect("https://theespeys.com/foodlog", code=301)
 
 # -----------------------------------------------------------------------------
 # Routes
@@ -123,6 +126,12 @@ def enforce_production_domain():
 @app.route('/')
 def home():
     return redirect(url_for('foodlog'))
+
+@app.route('/foodlog', methods=['GET'], strict_slashes=False)
+@requires_auth
+def foodlog():
+    logger.info("Serving main application page.")
+    return render_template('index.html')
 
 @app.route('/foodlog/login')
 def login_route():
@@ -164,12 +173,6 @@ def logout():
     session.pop('user', None)
     logger.info("User logged out.")
     return redirect(url_for('login_route'))
-
-@app.route('/foodlog')
-@requires_auth
-def foodlog():
-    logger.info("Serving main application page.")
-    return render_template('index.html')
 
 # -----------------------------------------------------------------------------
 # Example Log Management
@@ -265,6 +268,20 @@ def unhandled_exception(e):
     logger.error(f"Unhandled exception: {e}", exc_info=True)
     return "Internal Server Error", 500
 
+# -----------------------------------------------------------------------------
+# Secure Headers (Optional but Recommended)
+# -----------------------------------------------------------------------------
+@app.after_request
+def set_secure_headers(response):
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    return response
+
+# -----------------------------------------------------------------------------
+# Run the Flask App
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
     # For local dev usage, run on port 5001
     app.run(host="0.0.0.0", port=int(os.getenv('PORT', 5001)), debug=(ENV == 'dev'))
