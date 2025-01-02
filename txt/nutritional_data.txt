@@ -1,0 +1,15 @@
+Food Name: Mac-N-Cheese  
+Date: 12/27  
+Meal: Dinner  
+Brand: Cooper's BBQ  
+Icon: Mac And Cheese  
+Serving Size: 243 servings
+Calories: 540  
+Fat (g): 32  
+Saturated Fat (g): 20  
+Cholesterol (mg): 85  
+Sodium (mg): 1080  
+Carbs (g): 40  
+Fiber (g): 1  
+Sugar (g): 6  
+Protein (g): 18  
