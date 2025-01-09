@@ -1,15 +1,15 @@
-Food Name: Mac-N-Cheese  
-Date: 12/27  
-Meal: Dinner  
-Brand: Cooper's BBQ  
-Icon: Mac And Cheese  
-Serving Size: 243 servings
-Calories: 540  
-Fat (g): 32  
-Saturated Fat (g): 20  
-Cholesterol (mg): 85  
-Sodium (mg): 1080  
-Carbs (g): 40  
-Fiber (g): 1  
-Sugar (g): 6  
-Protein (g): 18  
+Food Name: Westlake Sesame Chicken
+Date: 1/7
+Meal: Dinner
+Brand: Chinatown Westlake
+Icon: Chicken
+Serving Size: 97 grams
+Calories: 230
+Fat (g): 10
+Saturated Fat (g): 2
+Cholesterol (mg): 40
+Sodium (mg): 370
+Carbs (g): 20
+Fiber (g): 0
+Sugar (g): 10
+Protein (g): 12

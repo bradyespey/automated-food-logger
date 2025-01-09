@@ -108,7 +108,7 @@ def attempt_food_logging(driver, food_item):
         logger.error(f"Failed to locate search box for {meal_name}.")
         return False
 
-    placeholder_text = "5e2YYQpf57Q1J7J3"
+    placeholder_text = "pjzFqiRjygwY"
     if not enter_placeholder_text(driver, search_input, placeholder_text):
         logger.error("Failed to enter placeholder text.")
         return False
