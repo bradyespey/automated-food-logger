@@ -1,15 +1,15 @@
-Food Name: Westlake Sesame Chicken
-Date: 1/7
+Food Name: Birthday Caramel Ice Cream w/Toppings
+Date: 1/3
 Meal: Dinner
-Brand: Chinatown Westlake
-Icon: Chicken
-Serving Size: 97 grams
-Calories: 230
-Fat (g): 10
-Saturated Fat (g): 2
-Cholesterol (mg): 40
-Sodium (mg): 370
-Carbs (g): 20
-Fiber (g): 0
-Sugar (g): 10
-Protein (g): 12
+Brand: Dean’s Italian Steakhouse
+Icon: Ice Cream
+Serving Size: 0.75 cup (adjusted for tall glass and toppings)
+Calories: 250
+Fat (g): 13
+Saturated Fat (g): 7
+Cholesterol (mg): 50
+Sodium (mg): 120
+Carbs (g): 28
+Fiber (g): 1
+Sugar (g): 23
+Protein (g): 4
