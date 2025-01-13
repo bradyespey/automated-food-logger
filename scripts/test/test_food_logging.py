@@ -31,7 +31,7 @@ load_dotenv()
 LOG_DIR = "/tmp/test_logs"
 os.makedirs(LOG_DIR, exist_ok=True)  # Ensure temporary log directory exists
 
-TXT_FILE_PATH = "/Users/bradyespey/Projects/GitHub/LoseIt/txt/nutritional_data.txt"
+TXT_FILE_PATH = "/Users/bradyespey/Projects/LoseIt/txt/nutritional_data.txt"
 if not os.path.exists(TXT_FILE_PATH):
     raise FileNotFoundError(f"Nutritional data file not found at: {TXT_FILE_PATH}")
 
@@ -663,7 +663,7 @@ def main():
                 continue
 
             # Enter placeholder text to trigger 'Create a custom food' button
-            placeholder_text = "t3stf00dd03sn0t3xist"
+            placeholder_text = "pjzFqiRjygwY"
             placeholder_entered = enter_placeholder_text(driver, search_input, placeholder_text)
             if not placeholder_entered:
                 logger.error("Failed to enter placeholder text. Skipping food item.")

@@ -1,15 +1,31 @@
-Food Name: Birthday Caramel Ice Cream w/Toppings
-Date: 1/3
-Meal: Dinner
-Brand: Dean’s Italian Steakhouse
-Icon: Ice Cream
-Serving Size: 0.75 cup (adjusted for tall glass and toppings)
-Calories: 250
-Fat (g): 13
-Saturated Fat (g): 7
-Cholesterol (mg): 50
-Sodium (mg): 120
-Carbs (g): 28
-Fiber (g): 1
-Sugar (g): 23
-Protein (g): 4
+Food Name: Test Nachos w/Queso  
+Date: 1/13  
+Meal: Dinner  
+Brand: Cooper's BBQ  
+Icon: Tortilla Chip  x
+Serving Size: 450 grams  
+Calories: 375  
+Fat (g): 23  
+Saturated Fat (g): 12  
+Cholesterol (mg): 40  
+Sodium (mg): 650  
+Carbs (g): 35  
+Fiber (g): 3  
+Sugar (g): 2  
+Protein (g): 9  
+
+Food Name: Brisket  
+Date: 1/13  
+Meal: Dinner  
+Brand: Cooper's BBQ  
+Icon: Beef  
+Serving Size: 126 grams  
+Calories: 360  
+Fat (g): 28  
+Saturated Fat (g): 11  
+Cholesterol (mg): 105  
+Sodium (mg): 640  
+Carbs (g): 0  
+Fiber (g): 0  
+Sugar (g): 0  
+Protein (g): 26  
