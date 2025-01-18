@@ -1,31 +1,31 @@
-Food Name: Test Nachos w/Queso  
-Date: 1/13  
-Meal: Dinner  
-Brand: Cooper's BBQ  
-Icon: Tortilla Chip  x
-Serving Size: 450 grams  
-Calories: 375  
-Fat (g): 23  
-Saturated Fat (g): 12  
-Cholesterol (mg): 40  
-Sodium (mg): 650  
-Carbs (g): 35  
-Fiber (g): 3  
-Sugar (g): 2  
-Protein (g): 9  
+Food Name: Caesar Salad (Half Portion)
+Date: 1/16
+Meal: Lunch
+Brand: Easy Tiger
+Icon: Salad
+Serving Size: 1/2 serving
+Calories: 175
+Fat (g): 13
+Saturated Fat (g): 3
+Cholesterol (mg): 20
+Sodium (mg): 300
+Carbs (g): 10
+Fiber (g): 2
+Sugar (g): 1
+Protein (g): 6
 
-Food Name: Brisket  
-Date: 1/13  
-Meal: Dinner  
-Brand: Cooper's BBQ  
-Icon: Beef  
-Serving Size: 126 grams  
-Calories: 360  
-Fat (g): 28  
-Saturated Fat (g): 11  
-Cholesterol (mg): 105  
-Sodium (mg): 640  
-Carbs (g): 0  
-Fiber (g): 0  
-Sugar (g): 0  
-Protein (g): 26  
+Food Name: Smoked Turkey Sandwich (Half Portion)
+Date: 1/16
+Meal: Lunch
+Brand: Easy Tiger
+Icon: Sandwich
+Serving Size: 1/2 serving
+Calories: 300
+Fat (g): 11
+Saturated Fat (g): 3
+Cholesterol (mg): 40
+Sodium (mg): 500
+Carbs (g): 27
+Fiber (g): 3
+Sugar (g): 2
+Protein (g): 16
