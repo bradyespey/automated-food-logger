@@ -1,31 +1,31 @@
-Food Name: Caesar Salad (Half Portion)
-Date: 1/16
+Food Name: Spicy Brisket Bao
+Date: 1/30
 Meal: Lunch
-Brand: Easy Tiger
-Icon: Salad
-Serving Size: 1/2 serving
-Calories: 175
-Fat (g): 13
+Brand: Bao’d Up
+Icon: Default
+Serving Size: 1 each
+Calories: 250
+Fat (g): 8
 Saturated Fat (g): 3
-Cholesterol (mg): 20
-Sodium (mg): 300
-Carbs (g): 10
+Cholesterol (mg): 30
+Sodium (mg): 600
+Carbs (g): 30
 Fiber (g): 2
-Sugar (g): 1
-Protein (g): 6
+Sugar (g): 6
+Protein (g): 12
 
-Food Name: Smoked Turkey Sandwich (Half Portion)
-Date: 1/16
+Food Name: Juicy Pork Bao
+Date: 1/30
 Meal: Lunch
-Brand: Easy Tiger
-Icon: Sandwich
-Serving Size: 1/2 serving
-Calories: 300
-Fat (g): 11
-Saturated Fat (g): 3
-Cholesterol (mg): 40
-Sodium (mg): 500
-Carbs (g): 27
-Fiber (g): 3
-Sugar (g): 2
-Protein (g): 16
+Brand: Bao’d Up
+Icon: Default
+Serving Size: 1 each
+Calories: 220
+Fat (g): 7
+Saturated Fat (g): 2.5
+Cholesterol (mg): 25
+Sodium (mg): 550
+Carbs (g): 28
+Fiber (g): 1
+Sugar (g): 5
+Protein (g): 10
