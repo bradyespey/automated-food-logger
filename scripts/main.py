@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-load_dotenv()
+basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '..', '.env.development'))
 
 LOSEIT_EMAIL = os.getenv('LOSEIT_EMAIL')
 LOSEIT_PASSWORD = os.getenv('LOSEIT_PASSWORD')
@@ -23,7 +24,7 @@ from scripts.navigation import (
     select_search_box,
     enter_placeholder_text,
     click_create_custom_food,
-    goto_initial_position  # Import the new helper
+    goto_initial_position
 )
 from scripts.food_entry import enter_food_details, save_food
 from scripts.water_intake import update_water_intake
@@ -99,7 +100,7 @@ def attempt_food_logging(driver, food_item):
         logger.error(f"Failed to navigate to {target_date}.")
         return False
 
-    # ALWAYS move cursor to the initial "Breakfast" position first
+    # Always move cursor to the initial "Breakfast" position first
     goto_initial_position(driver)
 
     meal_name = food_item.get("Meal", "Dinner")

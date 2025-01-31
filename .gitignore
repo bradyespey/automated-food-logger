@@ -115,13 +115,13 @@ dmypy.json
 cython_debug/
 
 # Logs
-logs/
 flask_session/
 
-# Sensitive files
+# Files
 loseit_cookies.json
 api_credentials.json
 
-# Old and other files
+# Folders
 old/
 other/
+logs/

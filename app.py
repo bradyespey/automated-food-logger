@@ -1,12 +1,10 @@
 # app.py
 
 import os
-import secrets
 import logging
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template, Response
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
-from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -14,11 +12,10 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 # Import your main Selenium script
 from scripts.main import main as process_log
 
-# -----------------------------------------------------------------------------
 # Load Environment
-# -----------------------------------------------------------------------------
 basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(basedir, '.env'))
+env_file = '.env.development' if os.getenv('ENV', 'dev') == 'dev' else '.env.production'
+load_dotenv(os.path.join(basedir, env_file))
 
 # Initialize Sentry for error tracking
 sentry_sdk.init(
@@ -27,27 +24,23 @@ sentry_sdk.init(
     traces_sample_rate=1.0,
 )
 
-# -----------------------------------------------------------------------------
 # Flask App Initialization
-# -----------------------------------------------------------------------------
 app = Flask(
     __name__,
     static_folder='static',
     static_url_path='/foodlog/static',  # Serve static files under /foodlog/static
     template_folder='templates'
 )
-app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key')
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key')  # Updated variable name
 
-# -----------------------------------------------------------------------------
 # Environment-specific Configurations
-# -----------------------------------------------------------------------------
 ENV = os.getenv("ENV", "dev").lower()
 logging_level = logging.DEBUG if ENV == "dev" else logging.INFO
 logging.basicConfig(level=logging_level)
 logger = logging.getLogger(__name__)
 
-# Fix proxy headers (Cloudflare/Heroku)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+# Remove ProxyFix since you're not using a reverse proxy
+# app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure session cookie settings based on environment
 if ENV in ["production", "heroku"]:
@@ -60,28 +53,23 @@ else:
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_COOKIE_SECURE"] = False
 
-# -----------------------------------------------------------------------------
 # Configure Authlib / Google OAuth
-# -----------------------------------------------------------------------------
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
-    client_id=os.getenv('CLIENT_ID'),
-    client_secret=os.getenv('CLIENT_SECRET'),
+    client_id=os.getenv('GOOGLE_CLIENT_ID'),           # Updated variable name
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),   # Updated variable name
     access_token_url='https://oauth2.googleapis.com/token',
     authorize_url='https://accounts.google.com/o/oauth2/auth',
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={
         'scope': 'openid profile email',
-        'token_endpoint_auth_method': 'client_secret_post',
         'prompt': 'consent',
         'access_type': 'offline',
     }
 )
 
-# -----------------------------------------------------------------------------
 # Authentication Decorator
-# -----------------------------------------------------------------------------
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -91,26 +79,46 @@ def requires_auth(f):
         return f(*args, **kwargs)
     return decorated
 
-# -----------------------------------------------------------------------------
+# Google OAuth Routes
+@app.route('/foodlog/login')
+def login_route():
+    redirect_uri = get_oauth_callback()
+    logger.info(f"Initiating OAuth flow. Redirect URI = {redirect_uri}")
+    return google.authorize_redirect(redirect_uri)  # Removed custom nonce
+
+@app.route('/foodlog/oauth2callback')
+def authorize():
+    logger.debug(f"OAuth callback received with args: {request.args}")
+    try:
+        # Exchange code for token
+        token = google.authorize_access_token()
+
+        # Parse user info from ID token with nonce=None
+        user_info = google.parse_id_token(token, nonce=None)
+        session['user'] = user_info
+        logger.info(f"User authenticated: {user_info}")
+
+        return redirect(url_for('foodlog'))
+    except Exception as e:
+        logger.error(f"OAuth authorization failed: {e}", exc_info=True)
+        return "Authorization failed.", 400
+
+@app.route('/foodlog/logout')
+def logout():
+    session.pop('user', None)
+    logger.info("User logged out.")
+    return redirect(url_for('login_route'))
+
 # Dynamic OAuth Callback URI
-# -----------------------------------------------------------------------------
 def get_oauth_callback():
-    """
-    Returns the correct Google OAuth callback URL depending on ENV.
-    """
     if ENV == "production":
         # Production = theespeys.com
         return "https://theespeys.com/foodlog/oauth2callback"
-    elif ENV == "heroku":
-        # Heroku (if accessed directly, which ideally shouldn't happen)
-        return "https://foodlogging-459c6f270ab7.herokuapp.com/foodlog/oauth2callback"
     else:
         # Dev
         return "http://localhost:5001/foodlog/oauth2callback"
 
-# -----------------------------------------------------------------------------
 # Optional: Enforce Production Domain
-# -----------------------------------------------------------------------------
 @app.before_request
 def enforce_production_domain():
     if ENV == "production":
@@ -120,9 +128,7 @@ def enforce_production_domain():
             if request.path != "/foodlog":
                 return redirect("https://theespeys.com/foodlog", code=301)
 
-# -----------------------------------------------------------------------------
 # Routes
-# -----------------------------------------------------------------------------
 @app.route('/')
 def home():
     return redirect(url_for('foodlog'))
@@ -133,50 +139,7 @@ def foodlog():
     logger.info("Serving main application page.")
     return render_template('index.html')
 
-@app.route('/foodlog/login')
-def login_route():
-    redirect_uri = get_oauth_callback()
-    nonce = secrets.token_urlsafe(16)
-    session['nonce'] = nonce
-    logger.info(f"Generated nonce: {nonce}")
-    logger.info(f"Initiating OAuth flow. Redirect URI = {redirect_uri}")
-    return google.authorize_redirect(redirect_uri, nonce=nonce)
-
-@app.route('/foodlog/oauth2callback')
-def authorize():
-    try:
-        # Exchange code for token
-        token = google.authorize_access_token()
-
-        # Check/parse token
-        token_nonce = token.get('nonce')
-        session_nonce = session.pop('nonce', None)  # remove from session after reading
-        logger.debug(f"Session nonce: {session_nonce}, Token nonce: {token_nonce}")
-
-        # If token includes a nonce, verify it
-        if token_nonce and session_nonce != token_nonce:
-            logger.error("Nonce mismatch detected.")
-            raise ValueError("Nonce mismatch detected.")
-
-        # Parse user info from ID token
-        user_info = google.parse_id_token(token, nonce=session_nonce)
-        session['user'] = user_info
-        logger.info(f"User authenticated: {user_info}")
-
-        return redirect(url_for('foodlog'))
-    except Exception as e:
-        logger.error(f"OAuth authorization failed: {e}", exc_info=True)
-        return "Authorization failed.", 500
-
-@app.route('/foodlog/logout')
-def logout():
-    session.pop('user', None)
-    logger.info("User logged out.")
-    return redirect(url_for('login_route'))
-
-# -----------------------------------------------------------------------------
 # Example Log Management
-# -----------------------------------------------------------------------------
 EXAMPLE_DIR = os.path.join(basedir, 'txt')
 EXAMPLE_FILE = os.path.join(EXAMPLE_DIR, 'nutritional_data.txt')
 
@@ -255,9 +218,7 @@ def debug_env():
         mimetype='text/plain'
     )
 
-# -----------------------------------------------------------------------------
 # Error Handlers
-# -----------------------------------------------------------------------------
 @app.errorhandler(500)
 def internal_error(error):
     logger.error(f"Internal server error: {error}", exc_info=True)
@@ -268,9 +229,7 @@ def unhandled_exception(e):
     logger.error(f"Unhandled exception: {e}", exc_info=True)
     return "Internal Server Error", 500
 
-# -----------------------------------------------------------------------------
 # Secure Headers (Optional but Recommended)
-# -----------------------------------------------------------------------------
 @app.after_request
 def set_secure_headers(response):
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
@@ -279,9 +238,7 @@ def set_secure_headers(response):
     response.headers['X-Frame-Options'] = 'DENY'
     return response
 
-# -----------------------------------------------------------------------------
 # Run the Flask App
-# -----------------------------------------------------------------------------
 if __name__ == "__main__":
     # For local dev usage, run on port 5001
     app.run(host="0.0.0.0", port=int(os.getenv('PORT', 5001)), debug=(ENV == 'dev'))
