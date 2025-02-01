@@ -39,9 +39,6 @@ logging_level = logging.DEBUG if ENV == "dev" else logging.INFO
 logging.basicConfig(level=logging_level)
 logger = logging.getLogger(__name__)
 
-# Remove ProxyFix since you're not using a reverse proxy
-# app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-
 # Configure session cookie settings based on environment
 if ENV in ["production", "heroku"]:
     app.config["SESSION_COOKIE_SAMESITE"] = "None"
