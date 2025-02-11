@@ -1,5 +1,5 @@
 Food Name: Test Modelo Beer  
-Date: 1/2
+Date: 12/5
 Meal: Snacks
 Brand: Modelo
 Icon: Beer  
@@ -15,7 +15,7 @@ Sugar (g): 0
 Protein (g): 6
 
 Food Name: Test Pina Colada  
-Date: 1/2
+Date: 12/5
 Meal: Breakfast  
 Brand: Bouldin Acres  
 Icon: Mixed Drink  
@@ -31,11 +31,11 @@ Sugar (g): 46
 Protein (g): 
 
 Food Name: Test Nachos w/Queso  
-Date: 1/2
+Date: 12/4
 Meal: Lunch
 Brand: 
 Icon: Tortilla Chip  
-Serving Size: 450 grams  
+Serving Size: 1/2 each (shared)  
 Calories: 375  
 Fat (g): 23  
 Saturated Fat (g): 12  
@@ -47,7 +47,7 @@ Sugar (g): 2
 Protein (g): 9  
 
 Food Name: Test Nitro Espresso Martini  
-Date: 1/2
+Date: 12/4
 Meal: Dinner  
 Brand: Homemade
 Icon: Mixed Drink  

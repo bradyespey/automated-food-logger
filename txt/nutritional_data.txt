@@ -1,31 +1,15 @@
-Food Name: Spicy Brisket Bao
-Date: 1/30
-Meal: Lunch
-Brand: Bao’d Up
-Icon: Default
-Serving Size: 1 each
-Calories: 250
-Fat (g): 8
-Saturated Fat (g): 3
-Cholesterol (mg): 30
-Sodium (mg): 600
-Carbs (g): 30
-Fiber (g): 2
-Sugar (g): 6
-Protein (g): 12
-
-Food Name: Juicy Pork Bao
-Date: 1/30
-Meal: Lunch
-Brand: Bao’d Up
-Icon: Default
-Serving Size: 1 each
-Calories: 220
-Fat (g): 7
-Saturated Fat (g): 2.5
-Cholesterol (mg): 25
-Sodium (mg): 550
-Carbs (g): 28
-Fiber (g): 1
-Sugar (g): 5
-Protein (g): 10
+Food Name: Test Modelo Beer  
+Date: 1/26
+Meal: Snacks
+Brand: Modelo
+Icon: Beer  
+Serving Size: 12 fluid ounces
+Calories: 600  
+Fat (g): 2 
+Saturated Fat (g): 3.5  
+Cholesterol (mg): 4.25  
+Sodium (mg): 45  
+Carbs (g): 45  
+Fiber (g): 17  
+Sugar (g): 0  
+Protein (g): 6

@@ -20,7 +20,7 @@ logger = get_logger("navigation")
 def get_current_date(driver):
     try:
         current_date_element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "GCJ-IGUD0B"))
+            EC.presence_of_element_located((By.CLASS_NAME, "GMQI3OOBIYB"))
         )
         current_date_text = current_date_element.text.strip()
         logger.info(f"Current date displayed in app: {current_date_text}")

@@ -18,7 +18,7 @@ from scripts.logging_setup import get_logger
 
 logger = get_logger("login")
 
-def initialize_driver(headless=True):
+def initialize_driver(headless=True): # Change to True to run with visible Chrome, change to False to run without visible Chrome
     try:
         chrome_options = Options()
         if headless:
@@ -131,7 +131,7 @@ def login(driver, email, password):
 def verify_login(driver):
     try:
         current_date_element = WebDriverWait(driver, 15).until(
-            EC.visibility_of_element_located((By.CLASS_NAME, "GCJ-IGUD0B"))
+            EC.visibility_of_element_located((By.CLASS_NAME, "GMQI3OOBIYB"))
         )
         current_date_text = current_date_element.text.strip()
         logger.info(f"Login verified. Current date found: {current_date_text}")
