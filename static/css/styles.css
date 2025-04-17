@@ -1,0 +1,264 @@
+/* static/css/styles.css */
+
+/* CSS Variables for Colors */
+:root {
+    --background-color: #1e1e1e;
+    --text-color: #ffffff;
+    --accent-color: #ff9f00;
+    --button-hover-color: #e88c00;
+    --overlay-background: #2b2b2b;
+    --border-color: #ddd;
+    --navbar-background: #183962;
+    --spinner-light: #f3f3f3;
+    --spinner-blue: #3498db;
+}
+
+/* Global Styles */
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Navbar Styles */
+.navbar {
+    background-color: var(--navbar-background);
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    flex-wrap: wrap;
+}
+
+.logo img {
+    height: 40px;
+}
+
+/* Navigation Buttons */
+.nav-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px; /* Gap between buttons */
+}
+
+.nav-buttons button {
+    background-color: var(--accent-color);
+    color: #1e1e1e;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 5px 0;
+    max-width: 200px;
+    flex: 1 1 auto; /* Allow buttons to grow evenly */
+    transition: background-color 0.3s;
+}
+
+.nav-buttons button:hover {
+    background-color: var(--button-hover-color);
+}
+
+/* Content Wrapper */
+.content-wrapper {
+    display: flex;
+    flex: 1;
+    padding: 20px;
+    flex-direction: column;
+}
+
+/* Input and Output Sections */
+.input-section, .output-section {
+    width: 100%;
+    padding: 10px 0;
+}
+
+/* Food Log Textarea */
+#food-log-text {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    box-sizing: border-box;
+    resize: vertical;
+    height: 800px; /* Change this value to adjust the text box size */
+    background-color: #2b2b2b;
+    color: var(--text-color);
+}
+
+/* Output Section */
+.output-section {
+    border-left: none;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    background-color: var(--background-color);
+}
+
+/* Response Message */
+#response-message {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--overlay-background);
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+/* Headings */
+.heading {
+    font-weight: bold;
+    color: var(--accent-color);
+    margin-top: 10px;
+}
+
+/* Hydration Calculator Styles */
+#hydration-calculator-section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 20px;
+    color: var(--text-color);
+}
+
+#hydration-calculator-section h2 {
+    color: var(--accent-color);
+}
+
+#hydration-calculator-section label {
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+#hydration-calculator-section select,
+#hydration-calculator-section input {
+    margin-top: 5px;
+    padding: 8px;
+    border-radius: 5px;
+    border: none;
+    font-size: 14px;
+    background-color: #2b2b2b;
+    color: var(--text-color);
+}
+
+#hydration-calculator-section button {
+    background-color: var(--accent-color);
+    color: #1e1e1e;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 15px;
+    transition: background-color 0.3s;
+}
+
+#hydration-calculator-section button:hover {
+    background-color: var(--button-hover-color);
+}
+
+#hydration-result {
+    margin-top: 20px;
+    font-size: 18px;
+    color: var(--accent-color);
+}
+
+/* Media Queries for Responsive Design */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .nav-buttons {
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 0;
+    }
+
+    .content-wrapper {
+        padding: 10px;
+    }
+
+    .input-section, .output-section {
+        padding: 10px 0;
+        width: 100%;
+    }
+}
+
+/* Spinner Styles */
+#spinner {
+    display: none; /* Hidden by default */
+    width: 24px;
+    height: 24px;
+    border: 4px solid var(--spinner-light); /* Light grey */
+    border-top: 4px solid var(--spinner-blue); /* Blue */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    vertical-align: middle;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Toggle Switch Styles */
+.toggle-container {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+    margin-right: 8px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px; width: 18px;
+    left: 3px; bottom: 3px;
+    background-color: var(--text-color);
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4CAF50;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}

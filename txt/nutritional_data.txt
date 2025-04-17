@@ -1,0 +1,15 @@
+Food Name: Test Modelo Beer  
+Date: 1/26
+Meal: Snacks
+Brand: Modelo
+Icon: Beer  
+Serving Size: 12 fluid ounces
+Calories: 600  
+Fat (g): 2 
+Saturated Fat (g): 3.5  
+Cholesterol (mg): 4.25  
+Sodium (mg): 45  
+Carbs (g): 45  
+Fiber (g): 17  
+Sugar (g): 0  
+Protein (g): 6

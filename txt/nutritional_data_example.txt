@@ -1,0 +1,63 @@
+Food Name: Test Modelo Beer  
+Date: 12/5
+Meal: Snacks
+Brand: Modelo
+Icon: Beer  
+Serving Size: 12 fluid ounces
+Calories: 600  
+Fat (g): 2 
+Saturated Fat (g): 3.5  
+Cholesterol (mg): 4.25  
+Sodium (mg): 45  
+Carbs (g): 45  
+Fiber (g): 17  
+Sugar (g): 0  
+Protein (g): 6
+
+Food Name: Test Pina Colada  
+Date: 12/5
+Meal: Breakfast  
+Brand: Bouldin Acres  
+Icon: Mixed Drink  
+Serving Size: 28 fluid ounces (1 glass)  
+Calories: 400  
+Fat (g): 18  
+Saturated Fat (g): 14  
+Cholesterol (mg): 40  
+Sodium (mg): 75  
+Carbs (g): 50  
+Fiber (g): 0  
+Sugar (g): 46  
+Protein (g): 
+
+Food Name: Test Nachos w/Queso  
+Date: 12/4
+Meal: Lunch
+Brand: 
+Icon: Tortilla Chip  
+Serving Size: 1/2 each (shared)  
+Calories: 375  
+Fat (g): 23  
+Saturated Fat (g): 12  
+Cholesterol (mg): 40  
+Sodium (mg): 650  
+Carbs (g): 35  
+Fiber (g): 3  
+Sugar (g): 2  
+Protein (g): 9  
+
+Food Name: Test Nitro Espresso Martini  
+Date: 12/4
+Meal: Dinner  
+Brand: Homemade
+Icon: Mixed Drink  
+Serving Size: 4.5 fluid ounces (1 glass)  
+Calories: 210  
+Fat (g): 0  
+Saturated Fat (g): 0  
+Cholesterol (mg): 0  
+Sodium (mg): 5  
+Carbs (g): 10  
+Fiber (g): 0  
+Sugar (g): 9  
+Protein (g): 0

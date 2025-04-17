@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Food Log</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <link rel="icon" href="{{ url_for('static', filename='images/loseit_icon.png') }}" type="image/png" />
+  </head>
+  <!-- Add a data attribute to pass the login state -->
+  <body data-loggedin="{{ 'true' if session.get('user') else 'false' }}">
+    <div class="navbar">
+      <div class="logo">
+        <a href="/foodlog">
+          <img src="{{ url_for('static', filename='images/loseit_logo.png') }}" alt="Lose It! Logo">
+        </a>
+      </div>
+      <div class="nav-buttons">
+        <button id="log-food-button">Log Food</button>
+        <button id="clear-button">Clear</button>
+
+        <!-- Log Water Toggle Button -->
+        <div class="toggle-container">
+          <label class="switch">
+            <input type="checkbox" id="log-water-toggle" checked>
+            <span class="slider round"></span>
+          </label>
+          <span>Log Water</span>
+        </div>
+
+        <button id="example-button">Example</button>
+        <button id="foodvisor-button">Foodvisor</button>
+        <button id="hydration-calculator-button">Hydration Calculator</button>
+        <button id="copy-output-button">Copy Output</button>
+
+        <!-- Show Login if not logged in; Logout if logged in -->
+        {% if session.get("user") %}
+          <button id="auth-button">Logout</button>
+        {% else %}
+          <button id="auth-button">Login</button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="content-wrapper" id="food-log-section">
+      <div class="input-section">
+        <textarea id="food-log-text" rows="20" cols="50" placeholder="Paste your food log text here..."></textarea>
+      </div>
+      <div class="output-section">
+        <div id="response-message">
+          <div id="spinner"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-wrapper" id="hydration-calculator-section" style="display:none;">
+      <div class="input-section">
+        <h2>Hydration Calculator</h2>
+        <label for="hydration-type">Liquid Type:</label>
+        <select id="hydration-type">
+          <option value="1">Water</option>
+          <option value="0.9">Beer</option>
+          <option value="1">Carbonated Water</option>
+          <option value="1.2">Coconut Water</option>
+          <option value="0.9">Coffee</option>
+          <option value="1">Energy Drink</option>
+          <option value="1">Hot Chocolate</option>
+          <option value="1">Juice</option>
+          <option value="0.5">Liquor</option>
+          <option value="1.2">Milk</option>
+          <option value="1">Protein Shake</option>
+          <option value="1.1">Skim Milk</option>
+          <option value="1">Smoothie</option>
+          <option value="1">Soda</option>
+          <option value="1">Soup</option>
+          <option value="1.2">Sports Drink</option>
+          <option value="1">Tea</option>
+          <option value="0.8">Wine</option>
+        </select>
+        <br>
+        <label for="hydration-amount">Amount (fl oz):</label>
+        <input type="number" id="hydration-amount" placeholder="Enter fluid ounces">
+        <br>
+        <button id="calculate-hydration-button">Calculate Hydration</button>
+        <div id="hydration-result" class="heading"></div>
+      </div>
+    </div>
+
+    <!-- Load external script -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>
