@@ -1,4 +1,5 @@
-// static/js/script.js
+//static/js/script.js
+
 
 document.addEventListener('DOMContentLoaded', () => {
     // Read the login state from the body's data attribute.

@@ -1,4 +1,5 @@
-# test_food_logging.py
+# scripts/test/test_food_logging.py
+
 
 import os
 import time

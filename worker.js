@@ -1,4 +1,5 @@
-// Cloudflare Worker: Updated to forward original Host and Proto headers
+//worker.js
+
 
 addEventListener('fetch', event => {
     event.respondWith(handleRequest(event.request));
