@@ -1,3 +1,5 @@
+REM make.bat
+
 @echo off
 if "%1"=="" goto usage
 if "%1"=="dev" goto dev

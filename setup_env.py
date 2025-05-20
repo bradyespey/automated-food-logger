@@ -1,25 +1,29 @@
+# setup_env.py
+
 import os
+import sys
 import shutil
-from pathlib import Path
 
 def setup_environment(env_type):
-    """Setup environment files based on type (dev/prod)"""
-    base_dir = Path(__file__).parent
-    env_file = base_dir / f'.env.{env_type}'
+    """Set up environment variables based on the specified type (dev/prod)."""
+    env_file = '.env.development' if env_type == 'dev' else '.env.production'
     
-    # Create .env file from template
-    with open(env_file, 'r') as f:
-        env_content = f.read()
+    # Create default environment file if it doesn't exist
+    if not os.path.exists(env_file):
+        with open(env_file, 'w') as f:
+            f.write(f'FLASK_APP=app.py\n')
+            f.write(f'FLASK_DEBUG={"1" if env_type == "dev" else "0"}\n')
+            f.write(f'ENV={env_type}\n')
+            if env_type == 'prod':
+                f.write('REDIRECT_URI=https://foodlog.theespeys.com/oauth2callback\n')
+            else:
+                f.write('REDIRECT_URI=http://localhost:5001/foodlog/oauth2callback\n')
     
-    # Write to .env
-    with open(base_dir / '.env', 'w') as f:
-        f.write(env_content)
-    
-    print(f"Environment set to {env_type}")
-    print(f"Using settings from {env_file}")
+    # Copy the environment file to .env
+    shutil.copy2(env_file, '.env')
+    print(f"Environment set up for {env_type} mode")
 
 if __name__ == '__main__':
-    import sys
     if len(sys.argv) != 2 or sys.argv[1] not in ['dev', 'prod']:
         print("Usage: python setup_env.py [dev|prod]")
         sys.exit(1)

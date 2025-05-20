@@ -34,9 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
       authButton.addEventListener('click', () => {
         // If logged in, go to logout; if not, go to login.
         if (loggedIn) {
-          window.location.href = '/foodlog/logout';
+          window.location.href = '/logout';
         } else {
-          window.location.href = '/foodlog/login';
+          window.location.href = '/login';
         }
       });
     }
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
     try {
       console.log("Submitting food log...");
-      const response = await fetch('/foodlog/submit-log', {
+      const response = await fetch('/submit-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadExample() {
     console.log("loadExample called");
     try {
-      const response = await fetch('/foodlog/example', { cache: 'no-store' });
+      const response = await fetch('/example', { cache: 'no-store' });
       if (response.ok) {
         const text = await response.text();
         const foodLogText = document.getElementById('food-log-text');
