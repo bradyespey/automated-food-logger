@@ -23,7 +23,7 @@ sentry_sdk.init(
 app = Flask(
     __name__,
     static_folder='static',
-    static_url_path='/foodlog/static',
+    static_url_path='/static',
     template_folder='templates'
 )
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key')
@@ -55,14 +55,32 @@ google = oauth.register(
     }
 )
 
+@app.before_request
+def enforce_production_domain():
+    if ENV == "production":
+        # Always redirect to foodlog.theespeys.com if not already there
+        if request.host != "foodlog.theespeys.com":
+            # If coming from theespeys.com/foodlog, strip the /foodlog prefix
+            if request.host == "theespeys.com" and request.path.startswith("/foodlog"):
+                new_path = request.path[7:] if request.path.startswith("/foodlog") else request.path
+                return redirect(f"https://foodlog.theespeys.com{new_path}", code=301)
+            # For any other host, redirect to the root of foodlog.theespeys.com
+            return redirect(f"https://foodlog.theespeys.com{request.path}", code=301)
+
 # Public route: the index page is now viewable by anyone.
-@app.route('/foodlog', methods=['GET'], strict_slashes=False)
-def foodlog():
+@app.route('/', methods=['GET'])
+def index():
     logger.info("Serving main application page.")
     return render_template('index.html')
 
+# Legacy route - redirect to new domain
+@app.route('/foodlog', methods=['GET'], strict_slashes=False)
+@app.route('/foodlog/', methods=['GET'], strict_slashes=False)
+def foodlog():
+    return redirect("https://foodlog.theespeys.com", code=301)
+
 # Public route: the example file is viewable by anyone.
-@app.route('/foodlog/example', methods=['GET'])
+@app.route('/example', methods=['GET'])
 def get_example():
     EXAMPLE_DIR = os.path.join(basedir, 'txt')
     EXAMPLE_FILE = os.path.join(EXAMPLE_DIR, 'nutritional_data_example.txt')
@@ -79,8 +97,12 @@ def get_example():
         logger.warning("No example file found.")
         return "No example file found.", 404
 
+@app.route('/foodlog/example', methods=['GET'])
+def get_example_legacy():
+    return redirect(url_for('get_example'))
+
 # This route now checks if a user is logged in.
-@app.route('/foodlog/submit-log', methods=['POST'])
+@app.route('/submit-log', methods=['POST'])
 def submit_log():
     if not session.get("user"):
         return jsonify({"output": "<span style='color: red;'>Please log in to log food.</span>"}), 403
@@ -101,13 +123,19 @@ def submit_log():
         logger.error("No log text provided.")
         return jsonify({"output": "No log text provided."}), 400
 
+@app.route('/foodlog/submit-log', methods=['POST'])
+def submit_log_legacy():
+    return redirect(url_for('submit_log'), code=307)
+
 # Authentication routes
+@app.route('/login')
 @app.route('/foodlog/login')
 def login_route():
     redirect_uri = get_oauth_callback()
     logger.info(f"Initiating OAuth flow. Redirect URI = {redirect_uri}")
     return google.authorize_redirect(redirect_uri)
 
+@app.route('/oauth2callback')
 @app.route('/foodlog/oauth2callback')
 def authorize():
     logger.debug(f"OAuth callback received with args: {request.args}")
@@ -116,29 +144,29 @@ def authorize():
         user_info = google.parse_id_token(token, nonce=None)
         session['user'] = user_info
         logger.info(f"User authenticated: {user_info}")
-        return redirect(url_for('foodlog'))
+        if ENV == "production":
+            return redirect("https://foodlog.theespeys.com")
+        else:
+            return redirect(url_for('index'))
     except Exception as e:
         logger.error(f"OAuth authorization failed: {e}", exc_info=True)
         return "Authorization failed.", 400
 
+@app.route('/logout')
 @app.route('/foodlog/logout')
 def logout():
     session.pop('user', None)
     logger.info("User logged out.")
-    return redirect(url_for('foodlog'))
+    if ENV == "production":
+        return redirect("https://foodlog.theespeys.com")
+    else:
+        return redirect(url_for('index'))
 
 def get_oauth_callback():
     if ENV == "production":
-        return "https://theespeys.com/foodlog/oauth2callback"
+        return "https://foodlog.theespeys.com/oauth2callback"
     else:
-        return "http://localhost:5001/foodlog/oauth2callback"
-
-@app.before_request
-def enforce_production_domain():
-    if ENV == "production":
-        if request.host not in ["theespeys.com", "www.theespeys.com"]:
-            if request.path != "/foodlog":
-                return redirect("https://theespeys.com/foodlog", code=301)
+        return "http://localhost:5001/oauth2callback"
 
 @app.route('/debug/env')
 def debug_env():
