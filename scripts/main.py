@@ -10,7 +10,11 @@ LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(basedir, '..', '.env.development'))
+# Try to load .env.development first, then fall back to .env
+env_file = os.path.join(basedir, '..', '.env.development')
+if not os.path.exists(env_file):
+    env_file = os.path.join(basedir, '..', '.env')
+load_dotenv(env_file)
 
 LOSEIT_EMAIL = os.getenv('LOSEIT_EMAIL')
 LOSEIT_PASSWORD = os.getenv('LOSEIT_PASSWORD')

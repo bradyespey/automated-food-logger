@@ -1,3 +1,5 @@
+<!-- README.md -->
+
 # Food Logging Automation
 
 ## Overview

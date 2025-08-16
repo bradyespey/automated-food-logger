@@ -64,7 +64,9 @@ def initialize_driver(headless=True): # Change to True to run with visible Chrom
         else:
             logger.debug("GOOGLE_CHROME_SHIM and CHROMEDRIVER_PATH not set. Using webdriver-manager locally.")
             from webdriver_manager.chrome import ChromeDriverManager
+            # Get the latest compatible version
             service = Service(ChromeDriverManager().install())
+            logger.info("ChromeDriver installed successfully via webdriver-manager.")
 
         driver = webdriver.Chrome(service=service, options=chrome_options)
 

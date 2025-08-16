@@ -11,7 +11,10 @@ from scripts.main import main as process_log
 
 # Load environment variables
 basedir = os.path.abspath(os.path.dirname(__file__))
+# Try to load .env.development first, then fall back to .env
 env_file = '.env.development' if os.getenv('ENV', 'dev') == 'dev' else '.env.production'
+if not os.path.exists(os.path.join(basedir, env_file)):
+    env_file = '.env'
 load_dotenv(os.path.join(basedir, env_file))
 
 sentry_sdk.init(
