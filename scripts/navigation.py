@@ -19,12 +19,39 @@ logger = get_logger("navigation")
 
 def get_current_date(driver):
     try:
-        current_date_element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "GMQI3OOBIYB"))
-        )
+        # Try multiple selectors for the current date element
+        date_selectors = [
+            (By.CLASS_NAME, "GNOSQVDBIYB"),  # Current dynamic class
+            (By.CLASS_NAME, "GMQI3OOBIYB"),  # Previous dynamic class
+            (By.XPATH, "//div[contains(@class, 'gwt-HTML') and contains(text(), ', 2025')]"),  # Generic pattern
+            (By.XPATH, "//div[contains(text(), ', 2025')]")  # Most generic
+        ]
+        
+        current_date_element = None
+        for selector_type, selector_value in date_selectors:
+            try:
+                current_date_element = WebDriverWait(driver, 3).until(
+                    EC.presence_of_element_located((selector_type, selector_value))
+                )
+                logger.info(f"Found date element using selector: {selector_type} = {selector_value}")
+                break
+            except TimeoutException:
+                continue
+        
+        if not current_date_element:
+            logger.error("Could not find current date element with any selector")
+            return None
+            
         current_date_text = current_date_element.text.strip()
         logger.info(f"Current date displayed in app: {current_date_text}")
-        current_date = datetime.strptime(current_date_text, '%A %b %d, %Y').date()
+        
+        # Handle different date formats
+        try:
+            current_date = datetime.strptime(current_date_text, '%A %b %d, %Y').date()
+        except ValueError:
+            # Try alternative format
+            current_date = datetime.strptime(current_date_text, '%A %B %d, %Y').date()
+            
         return current_date
     except Exception as e:
         logger.error(f"Error retrieving current date: {e}", exc_info=True)
@@ -73,22 +100,60 @@ def navigate_to_date(driver, target_date):
         elif current_date < target_date:
             # Click 'Next Day' button
             try:
-                next_button = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, "//div[@role='button' and @title='Next']"))
-                )
-                next_button.click()
-                logger.info("Clicked 'Next Day' button.")
+                # Try multiple selectors for next button
+                next_selectors = [
+                    (By.XPATH, "//div[@role='button' and @title='Next']"),
+                    (By.XPATH, "//div[contains(@class, 'nextArrowButton')]"),
+                    (By.XPATH, "//div[contains(@class, 'nextArrowButton') and @role='button']"),
+                    (By.XPATH, "//div[@title='Next' and @role='button']")
+                ]
+                
+                next_button = None
+                for selector_type, selector_value in next_selectors:
+                    try:
+                        next_button = WebDriverWait(driver, 2).until(
+                            EC.element_to_be_clickable((selector_type, selector_value))
+                        )
+                        logger.info(f"Found next button using selector: {selector_type} = {selector_value}")
+                        break
+                    except TimeoutException:
+                        continue
+                
+                if next_button:
+                    next_button.click()
+                    logger.info("Clicked 'Next Day' button.")
+                else:
+                    logger.error("Could not find next button with any selector")
             except (TimeoutException, ElementClickInterceptedException) as e:
                 logger.error(f"Could not click 'Next Day' button: {e}")
                 close_overlays(driver)
         else:
             # Click 'Previous Day' button
             try:
-                prev_button = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, "//div[@role='button' and @title='Previous']"))
-                )
-                prev_button.click()
-                logger.info("Clicked 'Previous Day' button.")
+                # Try multiple selectors for previous button
+                prev_selectors = [
+                    (By.XPATH, "//div[@role='button' and @title='Previous']"),
+                    (By.XPATH, "//div[contains(@class, 'prevArrowButton')]"),
+                    (By.XPATH, "//div[contains(@class, 'prevArrowButton') and @role='button']"),
+                    (By.XPATH, "//div[@title='Previous' and @role='button']")
+                ]
+                
+                prev_button = None
+                for selector_type, selector_value in prev_selectors:
+                    try:
+                        prev_button = WebDriverWait(driver, 2).until(
+                            EC.element_to_be_clickable((selector_type, selector_value))
+                        )
+                        logger.info(f"Found previous button using selector: {selector_type} = {selector_value}")
+                        break
+                    except TimeoutException:
+                        continue
+                
+                if prev_button:
+                    prev_button.click()
+                    logger.info("Clicked 'Previous Day' button.")
+                else:
+                    logger.error("Could not find previous button with any selector")
             except (TimeoutException, ElementClickInterceptedException) as e:
                 logger.error(f"Could not click 'Previous Day' button: {e}")
                 close_overlays(driver)

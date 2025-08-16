@@ -93,7 +93,8 @@ def get_example():
 # This route now checks if a user is logged in.
 @app.route('/submit-log', methods=['POST'])
 def submit_log():
-    if not session.get("user"):
+    # Temporarily bypass OAuth for testing ChromeDriver
+    if not session.get("user") and ENV != "dev":
         return jsonify({"output": "<span style='color: red;'>Please log in to log food.</span>"}), 403
     data = request.json
     log_text = data.get('log', '')
@@ -120,6 +121,7 @@ def login_route():
     return google.authorize_redirect(redirect_uri)
 
 @app.route('/oauth2callback')
+@app.route('/foodlog/oauth2callback')
 def authorize():
     logger.debug(f"OAuth callback received with args: {request.args}")
     try:
